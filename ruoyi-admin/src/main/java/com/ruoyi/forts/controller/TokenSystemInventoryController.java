@@ -9,6 +9,7 @@ import com.ruoyi.common.exception.BusinessException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.forts.domain.TokenSystemInventory;
 import com.ruoyi.forts.service.ITokenSystemInventoryService;
+import com.ruoyi.web.service.GeneralService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -41,10 +42,15 @@ public class TokenSystemInventoryController extends BaseController
     @Autowired
     private ITokenSystemInventoryService tokenSystemInventoryService;
 
+    @Autowired
+    private GeneralService generalService;
+
     @RequiresPermissions("forts:inventory:view")
     @GetMapping()
-    public String inventory()
+    public String inventory(ModelMap map)
     {
+
+        map.put("subTeam", generalService.getAllSubTeam());
         return prefix + "/inventory";
     }
 
@@ -72,7 +78,7 @@ public class TokenSystemInventoryController extends BaseController
                 "中台","综合业务系统","核心SOP",
                 "运营管理部","核心应用",
                 "高露、滕国浩","7*24", new Date(),
-                "200,200","8224","01010245","主管姓名");
+                "200,200","8224","01010245","主管姓名","","");
         List<TokenSystemInventory> defaultData = Arrays.asList(tokenSystemInventory);
         return util.exportExcel(defaultData, "用户数据");
     }
@@ -106,8 +112,11 @@ public class TokenSystemInventoryController extends BaseController
      * 新增江苏银行信息系统标准化清单（2019年四季度）
      */
     @GetMapping("/add")
-    public String add()
+    public String add(ModelMap map)
     {
+
+        map.put("subTeam", generalService.getAllSubTeam());
+        map.put("employers", generalService.selectEmployeesAll());
         return prefix + "/add";
     }
 
@@ -120,6 +129,7 @@ public class TokenSystemInventoryController extends BaseController
     @ResponseBody
     public AjaxResult addSave(TokenSystemInventory tokenSystemInventory)
     {
+        tokenSystemInventory.setUseMaintainStaff(tokenSystemInventory.getUseMaintainStaff().replaceAll(",","、"));
         return toAjax(tokenSystemInventoryService.insertTokenSystemInventory(tokenSystemInventory));
     }
 
@@ -130,7 +140,10 @@ public class TokenSystemInventoryController extends BaseController
     public String edit(@PathVariable("id") Long id, ModelMap mmap)
     {
         TokenSystemInventory tokenSystemInventory = tokenSystemInventoryService.selectTokenSystemInventoryById(id);
+        tokenSystemInventory.setUseMaintainStaff(tokenSystemInventory.getUseMaintainStaff().replaceAll("、",","));
         mmap.put("tokenSystemInventory", tokenSystemInventory);
+        mmap.put("subTeam", generalService.getAllSubTeam());
+        mmap.put("employers", generalService.selectEmployeesAll());
         return prefix + "/edit";
     }
 
@@ -143,6 +156,7 @@ public class TokenSystemInventoryController extends BaseController
     @ResponseBody
     public AjaxResult editSave(TokenSystemInventory tokenSystemInventory)
     {
+        tokenSystemInventory.setUseMaintainStaff(tokenSystemInventory.getUseMaintainStaff().replaceAll(",","、"));
         return toAjax(tokenSystemInventoryService.updateTokenSystemInventory(tokenSystemInventory));
     }
 
@@ -218,6 +232,7 @@ public class TokenSystemInventoryController extends BaseController
         }
         return successMsg.toString();
     }
+
 
     /**
      * 导入用户数据
