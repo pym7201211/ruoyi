@@ -16,10 +16,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="sendTag"    column="send_tag"    />
         <result property="seqNo"    column="seq_no"    />
+        <result property="send"    column="send"    />
+        <result property="isApply"    column="is_apply"    />
     </resultMap>
 
     <sql id="selectUrgencyTaskVo">
-        select id, employee_id, apply_environment, open_date, end_date, send_content, status, task_type, create_time, send_tag, seq_no from urgency_task
+        select id, employee_id, apply_environment, open_date, end_date, send_content, status, task_type, create_time, send_tag, seq_no,send,is_apply from urgency_task
     </sql>
 
     <select id="selectUrgencyTaskList" parameterType="UrgencyTask" resultMap="UrgencyTaskResult">
@@ -102,5 +104,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
-    
+
+    <select id="selectTokenAutoDelayList" parameterType="String" resultMap="UrgencyTaskResult">
+        select * from urgency_task a where a.status = '1' and to_date(a.end_date,'yyyy-MM-dd HH24:mi:ss') between sysdate and  sysdate+0.25/24 and a.send is null
+    </select>
+
+    <update id="updateTokenAutoDelay" parameterType="String">
+        update urgency_task a set a.send = '1' where a.seq_no = #{seqNo}
+    </update>
+
+    <select id="selectUrgencyTask" parameterType="String" resultMap="UrgencyTaskResult">
+        select * from urgency_task a where  a.seq_no =  #{seqNo}
+    </select>
+
+    <update id="updateUrgencyTaskBySeqNo" parameterType="String">
+        update urgency_task a set a.is_apply = '1' where a.seq_no = #{seqNo}
+    </update>
+
 </mapper>

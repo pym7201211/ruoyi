@@ -90,6 +90,14 @@ public interface UrgencyService {
     public JSONObject selectUrgencyHistory(String json) throws Exception;
 
     /**
+     * 查询联合告警紧急变更历史
+     * @param json
+     * @return
+     * @throws Exception
+     */
+    public JSONObject selectUrgencyIPHistory(String json) throws Exception;
+
+    /**
      * 查询验证接口信息
      * @param json
      * @return

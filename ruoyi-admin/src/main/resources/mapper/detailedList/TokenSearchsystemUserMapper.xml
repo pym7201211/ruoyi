@@ -21,9 +21,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTokenSearchsystemUserList" parameterType="TokenSearchsystemUser" resultMap="TokenSearchsystemUserResult">
         <include refid="selectTokenSearchsystemUserVo"/>
         <where>  
-            <if test="teamId != null  and teamId != ''"> and team_id = #{teamId}</if>
+            <if test="teamId != null  and teamId != ''"> and team_id like concat(concat('%', #{teamId}), '%')</if>
             <if test="teamName != null  and teamName != ''"> and team_name like concat(concat('%', #{teamName}), '%')</if>
-            <if test="userId != null  and userId != ''"> and user_id = #{userId}</if>
+            <if test="userId != null  and userId != ''"> and user_id like concat(concat('%', #{userId}), '%')</if>
             <if test="userName != null  and userName != ''"> and user_name like concat(concat('%', #{userName}), '%')</if>
         </where>
     </select>

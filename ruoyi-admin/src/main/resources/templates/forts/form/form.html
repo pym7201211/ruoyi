@@ -2,6 +2,8 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('令牌登记申请列表')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
 </head>
 <body class="gray-bg">
 <div class="container-div">
@@ -31,21 +33,14 @@
                         <li>
                             <p>数据方式：</p>
                             <!--<input type="text" name="addway"/>-->
-                            <select name = "addway" th:with="type=${@dict.getType('token_addway')}">
+                            <select name = "addway" class="selectpicker" th:with="type=${@dict.getType('token_addway')}">
                                 <option value="">选择</option>
                                 <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictLabel}">
 
                                 </option>
                             </select>
                         </li>
-                        <li>
-                            <p>开启事由：</p>
-                            <!--<input type="text" name="openIncident"/>-->
-                            <select name="openIncident" th:with="type=${@dict.getType('token_openIncident')}">
-                                <option value="">所有</option>
-                                <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictLabel}"></option>
-                            </select>
-                        </li>
+
                         <!--<li>
                             <p>常用语id：</p>
                             <input type="text" name="openIncidentId"/>
@@ -58,10 +53,10 @@
                             <p>关联vpn表id：</p>
                             <input type="text" name="uniquenesscode"/>
                         </li>-->
-                        <li>
+                      <!--  <li>
                             <p>发送消息流水号：</p>
                             <input type="text" name="seqno"/>
-                        </li>
+                        </li>-->
                         <!--<li>
                             <p>选择其它系统：</p>
                             <input type="text" name="otherSystem"/>
@@ -100,23 +95,40 @@
                             <p>申请环境：</p>
                             <input type="text" name="applyEnvironment"/>
                         </li>-->
+                        <li class="select-time" >
+                            <p>申请日期：</p>
+                            <input type="text" class="form-control" style="width:200px"  id="startTime"  name="params[beginApplyDate]"/>
+                            <span>  -  </span>
+                            <input type="text" class="form-control" style="width:200px" id="endTime"  name="params[endApplyDate]"/>
+                        </li>
+
                         <li>
                             <p>申请人：</p>
                             <input type="text" name="proposer"/>
-                        </li>
-                        <li class="select-time">
-                            <p>申请日期：</p>
-                            <input type="text" class="time-input" id="startTime" placeholder="开始时间" name="params[beginApplyDate]"/>
-                            <span>-</span>
-                            <input type="text" class="time-input" id="endTime" placeholder="结束时间" name="params[endApplyDate]"/>
+
                         </li>
                         <li>
                             <p>员工id：</p>
                             <input type="text" name="employeeId"/>
                         </li>
+
+
                         <li>
                             <p>所属团队</p>
-                            <input type="text" id="scienceChargeTeam" name="params[scienceChargeTeam]"/>
+                           <!-- <input type="text" id="scienceChargeTeam" name="params[scienceChargeTeam]"/>-->
+                            <select name="params[scienceChargeTeam]" class="selectpicker"   >
+                              <option value="">所有</option>
+                              <option th:each="subTeam : ${subTeam}" th:text="${subTeam.DeptName}" th:value="${subTeam.DeptName}"></option>
+                            </select>
+                        </li>
+
+                        <li>
+                            <p>开启事由：</p>
+                            <!--<input type="text" name="openIncident"/>-->
+                            <select name="openIncident" class="selectpicker" th:with="type=${@dict.getType('token_openIncident')}">
+                                <option value="">所有</option>
+                                <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictLabel}"></option>
+                            </select>
                         </li>
                         <!--<li>
                             <p>开启说明：</p>
@@ -124,7 +136,7 @@
                         </li>-->
                         <li>
                             <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
-                            <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset(),doReset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
                         </li>
                     </ul>
                 </div>
@@ -132,7 +144,7 @@
         </div>
 
         <div class="btn-group-sm" id="toolbar" role="group">
-            <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="forts:form:add">
+            <!--<a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="forts:form:add">
                 <i class="fa fa-plus"></i> 添加
             </a>
             <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="forts:form:edit">
@@ -140,7 +152,7 @@
             </a>
             <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="forts:form:remove">
                 <i class="fa fa-remove"></i> 删除
-            </a>
+            </a>-->
             <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="forts:form:export">
                 <i class="fa fa-download"></i> 导出
             </a>
@@ -154,6 +166,39 @@
     </div>
 </div>
 <th:block th:include="include :: footer" />
+<th:block th:include="include :: select2-js" />
+<th:block th:include="include :: datetimepicker-js" />
+<script type="text/javascript">
+    layui.use('laydate', function(){
+        var $ = layui.$;
+        var laydate = layui.laydate;
+
+        var start = laydate.render({
+            elem: '#startTime',
+            type: 'datetime',
+            trigger: 'click',
+            btns: ['clear', 'confirm'],
+            done: function(value, date){
+                endMax = end.config.max;
+                end.config.min = date;
+                end.config.min.month = date.month -1;
+            }
+        });
+        var end = laydate.render({
+            elem: '#endTime',
+            type: 'datetime',
+            trigger: 'click',
+            done: function(value, date){
+                if($.trim(value) == ''){
+                    var curDate = new Date();
+                    date = {'date': curDate.getDate(), 'month': curDate.getMonth()+1, 'year': curDate.getFullYear()};
+                }
+                start.config.max = date;
+                start.config.max.month = date.month -1;
+            }
+        });
+    })
+    </script>
 <script th:inline="javascript">
     var editFlag = [[${@permission.hasPermi('forts:form:edit')}]];
     var removeFlag = [[${@permission.hasPermi('forts:form:remove')}]];
@@ -163,6 +208,7 @@
     var prefix = ctx + "forts/form";
 
     $(function() {
+
         var options = {
             url: prefix + "/list",
             createUrl: prefix + "/add",
@@ -184,21 +230,28 @@
                     field : 'employeeId',
                     title : '员工id'
                 },
-                {
+               /* {
                     field : 'ip',
                     title : 'ip'
-                },
+                },*/
                 {
                     field : 'proposer',
                     title : '申请人'
                 },
                 {
                     field : 'applyDate',
-                    title : '申请日期'
+                    title : '申请日期',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:130px;">'+value+'</div>';
+                    }
+
                 },
                 {
                     field : 'systemName',
-                    title : '系统名称'
+                    title : '系统名称',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:80px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'applyEnvironment',
@@ -210,19 +263,31 @@
                 },
                 {
                     field : 'applyStatus',
-                    title : '申请状态'
+                    title : '申请状态',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:75px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'openDate',
-                    title : '开启时间'
+                    title : '开启时间',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:130px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'endDate',
-                    title : '结束时间'
+                    title : '结束时间',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:130px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'addway',
-                    title : '数据方式'
+                    title : '数据方式',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:80px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'openIncident',
@@ -306,6 +371,27 @@
         };
         $.table.init(options);
     });
+</script>
+<script type="text/javascript">
+
+    $(document).ready(function() {
+        $('.selectpicker').select2();
+
+    });
+    function doReset() {
+        $(".selectpicker").val("").trigger("change");//重置下拉框
+    }
+    /*$(function() {
+        laydate.render({ elem: '#test' ,format: 'yyyy-mm-dd hh:ii:ss' });
+       /!* $("#startTime").datetimepicker({
+            format: "yyyy-mm-dd hh:ii:ss",
+            autoclose: true
+        });
+        $("#endTime").datetimepicker({
+            format: "yyyy-mm-dd hh:ii:ss",
+            autoclose: true
+        });*!/
+    });*/
 </script>
 </body>
 <!-- 导入区域 -->

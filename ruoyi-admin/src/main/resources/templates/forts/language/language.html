@@ -2,6 +2,7 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('令牌开启常用语列表')" />
+    <th:block th:include="include :: select2-css" />
 </head>
 <body class="gray-bg">
      <div class="container-div">
@@ -11,23 +12,23 @@
                     <div class="select-list">
                         <ul>
                             <li>
-                                <p>常用语内容：</p>
+                                <p style="width: 80px">常用语内容：</p>
                                 <input type="text" name="content"/>
                             </li>
                             <li>
-                                <p>事由类型：</p>
-                                <select name="incidentType" th:with="type=${@dict.getType('token_openIncident')}">
+                                <p style="width: 80px">事由类型：</p>
+                                <select name="incidentType" class="form-control" th:with="type=${@dict.getType('token_openIncident')}">
                                     <option value="">所有</option>
                                     <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
                                 </select>
                             </li>
                             <li>
-                                <p>标记id：</p>
+                                <p style="width: 80px">标记id：</p>
                                 <input type="text" name="signId"/>
                             </li>
                             <li>
                                 <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
-                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset(),doReset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
                             </li>
                         </ul>
                     </div>
@@ -54,6 +55,7 @@
         </div>
     </div>
     <th:block th:include="include :: footer" />
+     <th:block th:include="include :: select2-js" />
     <script th:inline="javascript">
         var editFlag = [[${@permission.hasPermi('forts:language:edit')}]];
         var removeFlag = [[${@permission.hasPermi('forts:language:remove')}]];
@@ -104,6 +106,10 @@
             };
             $.table.init(options);
         });
+        function doReset() {
+            $(".form-control").val("").trigger("change");//重置下拉框
+        }
+
     </script>
 </body>
 </html>

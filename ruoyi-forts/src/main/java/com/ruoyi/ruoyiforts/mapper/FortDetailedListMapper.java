@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface FortDetailedListMapper {
 
@@ -37,6 +38,22 @@ public interface FortDetailedListMapper {
 
     public HashMap<String,String> selectTeam(@Param("systemName") String systemName,
                                              @Param("userId") String userId);
+
+    /**
+     * 查询用户部门
+     *
+     * @param userId 用户id
+     * @return 用户部门
+     */
+    public Map<String,Object> selectUserDep(@Param("userId") String userId);
+
+    /**
+     * 查询系统部门
+     *
+     * @param systemName 系统名
+     * @return 系统部门
+     */
+    public Map<String,Object> selectSystemDep(@Param("systemName") String systemName);
 
     /**
      * 查询审批流程

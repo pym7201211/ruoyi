@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.web.mapper.GeneralMapper">
+
+
+
+    <resultMap type="Employer" id="EmployerResult">
+        <result property="employerName"    column="PERSONNAME"    />
+        <result property="employerId"    column="USER_ID"    />
+    </resultMap>
+
+    <resultMap type="Org" id="OrgResult">
+        <result property="orgPid"    column="PARENT_ID"    />
+        <result property="orgName"    column="ORG_NAME"    />
+        <result property="orgId"    column="ORG_ID"    />
+        <result property="orgtype"    column="INSTITUTIONAL_TYPE"    />
+    </resultMap>
+
+    <resultMap type="SubTeam" id="SubTeamResult">
+        <result property="leaderId"    column="LEADER_ID"    />
+        <result property="leaderName"    column="LEADER_NAME"    />
+        <result property="deptId"    column="DEPT_ID"    />
+        <result property="deptName"    column="DEPT_NAME"    />
+    </resultMap>
+
+
+    <sql id="selectEmployer">
+        select PERSONNAME, USER_ID from PERSON
+    </sql>
+
+    <sql id="selectOrg">
+       select PARENT_ID,ORG_NAME,ORG_ID,INSTITUTIONAL_TYPE from SYS_ORG
+    </sql>
+
+    <sql id="selectSubTeam">
+       select LEADER_ID,LEADER_NAME,DEPT_ID,DEPT_NAME from URGENCY_DIRECTOR_LEADER
+    </sql>
+
+    <select id="selectUserList"  resultMap="EmployerResult">
+        <include refid="selectEmployer"/>
+
+    </select>
+
+    <select id="selectOrgList" parameterType="String" resultMap="OrgResult">
+        <include refid="selectOrg"/>
+        <where>
+            <if test="pid != null  and pid != ''"> and PARENT_ID = #{pid}</if>
+            <if test="orgtype != null  and orgtype != ''"> and INSTITUTIONAL_TYPE =#{orgtype}</if>
+        </where>
+    </select>
+
+    <select id="selectOrgByOrgId" parameterType="String" resultMap="OrgResult">
+        <include refid="selectOrg"/>
+        <where>
+           and  rownum= 1
+            <if test="orgid != null  and orgid != ''"> and ORG_ID = #{orgid}</if>
+
+        </where>
+
+    </select>
+
+    <select id="selectAllSubTeam" parameterType="String" resultMap="SubTeamResult">
+        <include refid="selectSubTeam"/>
+
+
+    </select>
+
+
+</mapper>

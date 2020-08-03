@@ -31,7 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>  
             <if test="leaderId != null  and leaderId != ''"> and leader_id = #{leaderId}</if>
             <if test="leaderName != null  and leaderName != ''"> and leader_name like concat(concat('%', #{leaderName}), '%')</if>
-            <if test="employeeId != null  and employeeId != ''"> and employee_id = #{employeeId}</if>
+            <if test="employeeId != null  and employeeId != ''"> and employee_id like  concat(concat('%', #{employeeId}), '%')</if>
             <if test="employeeName != null  and employeeName != ''"> and employee_name like concat(concat('%', #{employeeName}), '%')</if>
             <if test="applyContent != null  and applyContent != ''"> and apply_content = #{applyContent}</if>
             <if test="seno != null  and seno != ''"> and seno = #{seno}</if>

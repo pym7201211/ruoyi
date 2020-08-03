@@ -45,7 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectTokenXkstaffDepartmentVo"/>
         <where>  
             <if test="extend10 != null  and extend10 != ''"> and extend10 = #{extend10}</if>
-            <if test="userId != null  and userId != ''"> and user_id = #{userId}</if>
+            <if test="userId != null  and userId != ''"> and user_id like concat(concat('%', #{userId}), '%')</if>
             <if test="userName != null  and userName != ''"> and user_name like concat(concat('%', #{userName}), '%')</if>
             <if test="sex != null  and sex != ''"> and sex = #{sex}</if>
             <if test="userType != null  and userType != ''"> and user_type = #{userType}</if>

@@ -31,7 +31,7 @@ public class PushMessageServiceSoapBindingQSService
         WebServiceException e = null;
         try {
             //url = new URL("http://88.0.89.101:8001/EsbService/PushMessageServiceProxyService");
-            url = new URL("http://66.1.43.14:8001/EsbService/PushMessageServiceProxyService");
+             url = new URL("http://66.1.43.14:8001/EsbService/PushMessageServiceProxyService");
         } catch (MalformedURLException ex) {
             e = new WebServiceException(ex);
         }

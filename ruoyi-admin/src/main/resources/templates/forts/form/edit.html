@@ -3,6 +3,7 @@
 <head>
     <th:block th:include="include :: header('修改令牌登记申请')" />
     <th:block th:include="include :: datetimepicker-css" />
+    <th:block th:include="include :: select2-css" />
 </head>
 <body class="white-bg">
 <div class="wrapper wrapper-content animated fadeInRight ibox-content">
@@ -26,7 +27,7 @@
             <div class="col-sm-8">
                 <div class="input-group date">
                     <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                    <input name="openDate" th:value="${#dates.format(tokenApplyForm.openDate, 'yyyy-MM-dd')}" class="form-control" placeholder="yyyy-MM-dd" type="text">
+                    <input name="openDate" th:value="${#dates.format(tokenApplyForm.openDate, 'yyyy-MM-dd HH:mm:ss')}" class="form-control" placeholder="yyyy-MM-dd  HH:ii:ss" type="text">
                 </div>
             </div>
         </div>
@@ -35,7 +36,7 @@
             <div class="col-sm-8">
                 <div class="input-group date">
                     <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                    <input name="endDate" th:value="${#dates.format(tokenApplyForm.endDate, 'yyyy-MM-dd')}" class="form-control" placeholder="yyyy-MM-dd" type="text">
+                    <input name="endDate" th:value="${#dates.format(tokenApplyForm.endDate, 'yyyy-MM-dd HH:mm:ss')}" class="form-control" placeholder="yyyy-MM-dd  HH:ii:ss" type="text">
                 </div>
             </div>
         </div>
@@ -125,9 +126,13 @@
             </div>
         </div>-->
         <div class="form-group">
-            <label class="col-sm-3 control-label">是否开启远程 0-不开启 1-开启：</label>
+            <label class="col-sm-3 control-label">是否开启远程：</label>
             <div class="col-sm-8">
-                <input name="openDistinct" th:field="*{openDistinct}" class="form-control" type="text">
+                <!--<input name="openDistinct" th:field="*{openDistinct}" class="form-control" type="text">-->
+                <select name="openDistinct" th:field="*{openDistinct}" class="form-control" >
+                    <option value="0">不开启</option>
+                    <option value="1"> 开启</option>
+                </select>
             </div>
         </div>
         <div class="form-group">
@@ -145,7 +150,12 @@
         <div class="form-group">
             <label class="col-sm-3 control-label">申请人：</label>
             <div class="col-sm-8">
-                <input name="proposer" th:field="*{proposer}" class="form-control" type="text">
+                <!--<input name="proposer" th:field="*{proposer}" class="form-control" type="text">-->
+                <select id="applyPerson" name="proposer" th:field="*{proposer}"  class="form-control selectpicker" onchange="getApplyPersonId()">
+                    <option value="">选择 </option>
+                    <option th:each="employers : ${employers}" th:text="${employers.employerName}" th:code="${employers.employerId}" th:value="${employers.employerName}">
+                    </option>
+                </select>
             </div>
         </div>
         <div class="form-group">
@@ -153,11 +163,11 @@
             <div class="col-sm-8">
                 <div class="input-group date">
                     <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                    <input name="applyDate" th:value="${#dates.format(tokenApplyForm.applyDate, 'yyyy-MM-dd')}" class="form-control" placeholder="yyyy-MM-dd" type="text">
+                    <input name="applyDate" th:value="${#dates.format(tokenApplyForm.applyDate, 'yyyy-MM-dd  HH:mm:ss')}" class="form-control" placeholder="yyyy-MM-dd  HH:ii:ss"  type="text">
                 </div>
             </div>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="display: none;">
             <label class="col-sm-3 control-label">员工id：</label>
             <div class="col-sm-8">
                 <input name="employeeId" th:field="*{employeeId}" class="form-control" type="text">
@@ -173,6 +183,7 @@
 </div>
 <th:block th:include="include :: footer" />
 <th:block th:include="include :: datetimepicker-js" />
+<th:block th:include="include :: select2-js" />
 <script type="text/javascript">
     var prefix = ctx + "forts/form";
     $("#form-form-edit").validate({
@@ -186,22 +197,27 @@
     }
 
     $("input[name='openDate']").datetimepicker({
-        format: "yyyy-mm-dd",
-        minView: "month",
+        format: "yyyy-mm-dd hh:ii:ss",
+        minView: "hour",
         autoclose: true
     });
 
     $("input[name='endDate']").datetimepicker({
-        format: "yyyy-mm-dd",
-        minView: "month",
+        format: "yyyy-mm-dd hh:ii:ss",
+        minView: "hour",
         autoclose: true
     });
 
     $("input[name='applyDate']").datetimepicker({
-        format: "yyyy-mm-dd",
-        minView: "month",
+        format: "yyyy-mm-dd hh:ii:ss",
+        minView: "hour",
         autoclose: true
     });
+
+    function getApplyPersonId(){
+        var grade = $('#applyPerson').find("option:selected").attr("code");
+        document.getElementById("employeeId").value=grade;
+    }
 </script>
 </body>
 </html>

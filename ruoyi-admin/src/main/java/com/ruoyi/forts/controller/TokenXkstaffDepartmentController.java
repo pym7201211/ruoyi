@@ -6,8 +6,11 @@ import java.util.List;
 
 import com.ruoyi.common.exception.BusinessException;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.forts.domain.Org;
 import com.ruoyi.forts.domain.TokenXkstaffDepartment;
 import com.ruoyi.forts.service.ITokenXkstaffDepartmentService;
+import com.ruoyi.web.mapper.GeneralMapper;
+import com.ruoyi.web.service.GeneralService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -40,10 +43,20 @@ public class TokenXkstaffDepartmentController extends BaseController
     @Autowired
     private ITokenXkstaffDepartmentService tokenXkstaffDepartmentService;
 
+    @Autowired
+    private GeneralService generalService;
+
     @RequiresPermissions("forts:department:view")
     @GetMapping()
-    public String department()
+    public String department(ModelMap map)
     {
+        List<Org> orgFirstlist = generalService.selectOrgAll("","0");//组织机构
+        List<Org> orgSeclist = generalService.selectOrgAll("","1");//一级部门
+        List<Org> orgThirdlist = generalService.selectOrgAll("","2");//二级部门
+
+        map.put("orgFirstlist", orgFirstlist);
+        map.put("orgSeclist", orgSeclist);
+        map.put("orgThirdlist", orgThirdlist);
         return prefix + "/department";
     }
 
@@ -57,6 +70,15 @@ public class TokenXkstaffDepartmentController extends BaseController
     {
         startPage();
         List<TokenXkstaffDepartment> list = tokenXkstaffDepartmentService.selectTokenXkstaffDepartmentList(tokenXkstaffDepartment);
+        for (TokenXkstaffDepartment Department:list
+             ) {
+            Org orgcodename=generalService.selectOrgByOrgId(Department.getOrgCode());
+            Org onedeptorgname=generalService.selectOrgByOrgId(Department.getOneDeptOrg());
+            Org twodeptorgname=generalService.selectOrgByOrgId(Department.getTwoDeptOrg());
+            Department.setOrgCode(orgcodename==null?Department.getOrgCode():orgcodename.getOrgName());
+            Department.setOneDeptOrg(onedeptorgname==null?Department.getOneDeptOrg():onedeptorgname.getOrgName());
+            Department.setTwoDeptOrg(twodeptorgname==null?Department.getTwoDeptOrg():twodeptorgname.getOrgName());
+        }
         return getDataTable(list);
     }
 

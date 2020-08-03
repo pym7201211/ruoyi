@@ -197,6 +197,9 @@ public class UrgencyAlteratRegister extends BaseEntity
     @Excel(name = "所属团队")
     private String scienceChargeTeam;
 
+    @Excel(name = "编号")
+    private String identity;
+
     public String getIp() {
         return ip;
     }
@@ -610,6 +613,14 @@ public class UrgencyAlteratRegister extends BaseEntity
         return reviewerStatus;
     }
 
+    public String getIdentity() {
+        return identity;
+    }
+
+    public void setIdentity(String identity) {
+        this.identity = identity;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -657,6 +668,7 @@ public class UrgencyAlteratRegister extends BaseEntity
             .append("securityTeamId", getSecurityTeamId())
             .append("bigDataTeamId", getBigDataTeamId())
             .append("reviewerStatus", getReviewerStatus())
+                .append("identity", getIdentity())
             .toString();
     }
 }

@@ -62,4 +62,19 @@ public interface TokenApplyFormMapper
      * @return 结果
      */
     public int deleteTokenApplyFormByIds(String[] tokenIds);
+
+    /**
+     * 查询令牌延期数据
+     *
+     * @return 令牌延期数据
+     */
+    public List<TokenApplyForm> selectTokenAutoDelayList();
+
+    /**
+     * 到期令牌推送成功
+     *
+     * @param seqno 到期令牌推送成功
+     * @return 结果
+     */
+    public int updateTokenAutoDelay(String seqno);
 }

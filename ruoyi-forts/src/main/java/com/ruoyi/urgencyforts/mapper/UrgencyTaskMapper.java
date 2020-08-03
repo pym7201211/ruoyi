@@ -1,6 +1,8 @@
 package com.ruoyi.urgencyforts.mapper;
 
 import com.ruoyi.urgencyforts.domain.UrgencyTask;
+import org.apache.ibatis.annotations.Param;
+
 import java.util.List;
 
 /**
@@ -58,4 +60,25 @@ public interface UrgencyTaskMapper
      * @return 结果
      */
     public int deleteUrgencyTaskByIds(String[] ids);
+
+    /**
+     * 查询令牌延期数据
+     *
+     * @return 令牌延期数据
+     */
+    public List<UrgencyTask> selectTokenAutoDelayList();
+
+    /**
+     * 到期令牌推送成功
+     *
+     * @param seqNo 到期令牌推送成功
+     * @return 结果
+     */
+    public int updateTokenAutoDelay(String seqNo);
+
+    public List<UrgencyTask> selectUrgencyTask(@Param("seqNo") String seqNo);
+
+
+    public int updateUrgencyTaskBySeqNo(@Param("seqNo") String seqNo);
+
 }

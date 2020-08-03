@@ -56,6 +56,14 @@ public class UrgencyTask extends BaseEntity
     @Excel(name = "流水号")
     private String seqNo;
 
+    /** 是否推送 */
+    @Excel(name = "是否推送")
+    private String send;
+
+    /** 是否延期申请 */
+    @Excel(name = "是否延期申请")
+    private String isApply;
+
     private Date createTime;
 
     @Override
@@ -157,6 +165,22 @@ public class UrgencyTask extends BaseEntity
     public String getSeqNo() 
     {
         return seqNo;
+    }
+
+    public String getIsApply() {
+        return isApply;
+    }
+
+    public void setIsApply(String isApply) {
+        this.isApply = isApply;
+    }
+
+    public String getSend() {
+        return send;
+    }
+
+    public void setSend(String send) {
+        this.send = send;
     }
 
     public UrgencyTask(){};

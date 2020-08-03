@@ -1,6 +1,8 @@
 package com.ruoyi.detailedList.controller;
 
 import java.util.List;
+
+import com.ruoyi.web.service.GeneralService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -30,6 +32,9 @@ import com.ruoyi.common.core.page.TableDataInfo;
 public class TokenSearchsystemUserController extends BaseController
 {
     private String prefix = "detailedList/user";
+
+    @Autowired
+    private GeneralService generalService;
 
     @Autowired
     private ITokenSearchsystemUserService tokenSearchsystemUserService;
@@ -71,8 +76,9 @@ public class TokenSearchsystemUserController extends BaseController
      * 新增搜索系统人员
      */
     @GetMapping("/add")
-    public String add()
+    public String add(ModelMap mmap)
     {
+        mmap.put("employers", generalService.selectEmployeesAll());
         return prefix + "/add";
     }
 
@@ -96,6 +102,7 @@ public class TokenSearchsystemUserController extends BaseController
     {
         TokenSearchsystemUser tokenSearchsystemUser = tokenSearchsystemUserService.selectTokenSearchsystemUserById(id);
         mmap.put("tokenSearchsystemUser", tokenSearchsystemUser);
+        mmap.put("employers", generalService.selectEmployeesAll());
         return prefix + "/edit";
     }
 

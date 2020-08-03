@@ -2,6 +2,7 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('信科部员工列表')" />
+    <th:block th:include="include :: select2-css" />
 </head>
 <body class="gray-bg">
      <div class="container-div">
@@ -36,54 +37,67 @@
                                     <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
                                 </select>
                             </li>-->
-                            <li>
+                          <!--  <li>
                                 <p>身份证号：</p>
                                 <input type="text" name="idCard"/>
-                            </li>
-                            <li>
+                            </li>-->
+                           <!-- <li>
                                 <p>二级部门：</p>
                                 <input type="text" name="twoDeptOrg"/>
-                            </li>
-                           <!-- <li>
+                            </li>-->
+                           <li>
                                 <p>所属机构：</p>
-                                <input type="text" name="orgCode"/>
+                               <!-- <input type="text" name="orgCode"/>-->
+                               <select name="orgCode" class="selectpicker"   >
+                                   <option value="">所有</option>
+                                   <option th:each="orgFirstlist : ${orgFirstlist}" th:text="${orgFirstlist.orgName}" th:value="${orgFirstlist.orgId}"></option>
+                               </select>
                             </li>
                             <li>
                                 <p>一级部门：</p>
-                                <input type="text" name="oneDeptOrg"/>
+                                <!--<input type="text" name="oneDeptOrg"/>-->
+                                <select name="oneDeptOrg" class="selectpicker"   >
+                                    <option value="">所有</option>
+                                    <option th:each="orgSeclist : ${orgSeclist}" th:text="${orgSeclist.orgName}" th:value="${orgSeclist.orgId}"></option>
+                                </select>
                             </li>
                             <li>
                                 <p>二级部门：</p>
-                                <input type="text" name="twoDeptOrg"/>
+                                <!--<input type="text" name="twoDeptOrg"/>-->
+                                <select name="twoDeptOrg" class="selectpicker"   >
+                                    <option value="">所有</option>
+                                    <option th:each="orgThirdlist : ${orgThirdlist}" th:text="${orgThirdlist.orgName}" th:value="${orgThirdlist.orgId}"></option>
+                                </select>
                             </li>
-                            <li>
-                                <p>岗位代码：</p>
-                                <input type="text" name="positionCode"/>
-                            </li>
-                            <li>
-                                <p>拼音名称：</p>
-                                <input type="text" name="pinyinName"/>
-                            </li>
-                            <li>
-                                <p>任职资格：</p>
-                                <input type="text" name="qualification"/>
-                            </li>
-                            <li>
-                                <p>逻辑删除机构标志：</p>
-                                <input type="text" name="dFlag"/>
-                            </li>
-                            <li>
-                                <p>维护人：</p>
-                                <input type="text" name="maintainOr"/>
-                            </li>
-                            <li>
-                                <p>维护时间：</p>
-                                <input type="text" name="maintainDate"/>
-                            </li>-->
-                            <li>
+                            <!--
+                           <li>
+                               <p>岗位代码：</p>
+                               <input type="text" name="positionCode"/>
+                           </li>
+                           <li>
+                               <p>拼音名称：</p>
+                               <input type="text" name="pinyinName"/>
+                           </li>
+                           <li>
+                               <p>任职资格：</p>
+                               <input type="text" name="qualification"/>
+                           </li>
+                           <li>
+                               <p>逻辑删除机构标志：</p>
+                               <input type="text" name="dFlag"/>
+                           </li>
+                           <li>
+                               <p>维护人：</p>
+                               <input type="text" name="maintainOr"/>
+                           </li>
+                           <li>
+                               <p>维护时间：</p>
+                               <input type="text" name="maintainDate"/>
+                           </li>-->
+                           <!-- <li>
                                 <p>手机号码：</p>
                                 <input type="text" name="phone"/>
-                            </li>
+                            </li>-->
                             <!--<li>
                                 <p>职务：</p>
                                 <input type="text" name="duty"/>
@@ -134,7 +148,7 @@
                             </li>-->
                             <li>
                                 <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
-                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset(),doReset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
                             </li>
                         </ul>
                     </div>
@@ -142,7 +156,7 @@
             </div>
 
             <div class="btn-group-sm" id="toolbar" role="group">
-                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="forts:department:add">
+               <!-- <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="forts:department:add">
                     <i class="fa fa-plus"></i> 添加
                 </a>
                 <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="forts:department:edit">
@@ -150,7 +164,7 @@
                 </a>
                 <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="forts:department:remove">
                     <i class="fa fa-remove"></i> 删除
-                </a>
+                </a>-->
                 <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="forts:department:export">
                     <i class="fa fa-download"></i> 导出
                  </a>
@@ -164,6 +178,7 @@
         </div>
     </div>
     <th:block th:include="include :: footer" />
+     <th:block th:include="include :: select2-js" />
     <script th:inline="javascript">
         var editFlag = [[${@permission.hasPermi('forts:department:edit')}]];
         var removeFlag = [[${@permission.hasPermi('forts:department:remove')}]];
@@ -245,7 +260,10 @@
                 },
                 {
                     field : 'maintainDate', 
-                    title : '维护时间'
+                    title : '维护时间',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:130px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'phone', 
@@ -313,6 +331,15 @@
             $.table.init(options);
         });
     </script>
+     <script type="text/javascript">
+         $(document).ready(function() {
+             $('.selectpicker').select2();
+         });
+
+         function doReset() {
+             $(".selectpicker").val("").trigger("change");//重置下拉框
+         }
+     </script>
 </body>
 <!-- 导入区域 -->
 <script id="importTpl" type="text/template">

@@ -1,8 +1,10 @@
 package com.ruoyi.ruoyiforts.service;
 
 import com.ruoyi.ruoyiforts.domain.TokenApplyForms;
-import org.apache.shiro.crypto.hash.Hash;
+import com.ruoyi.urgencyforts.domain.UrgencyTask;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -17,7 +19,13 @@ public interface FortService {
      * 首页列表查询和详情
      * @return
      */
-    public List<HashMap<String,String>> selectApplyAndResult(String employeeId);
+    public List<HashMap<String,String>> selectApplyAndResult(String employeeId,String ip);
+
+    /**
+     * 联合告警令牌申请历史查询
+     * @return
+     */
+    public List<HashMap<String,String>> selectApplyAndIPResult(String systemName);
 
     /**
      * 新增令牌登记申请
@@ -93,7 +101,29 @@ public interface FortService {
 
     public ModelMap getSystemInfo(String list) throws Exception;
 
-    public ModelMap getEmployeeNo(String systemId) throws Exception;
+    public ModelMap getEmployeeNo(String systemId, String ip) throws Exception;
+
+    public ModelMap getIndexName(String systemId, String ip) throws Exception;
+
+    public ModelMap getDataValue(String systemId, String ip, String dataUser);
+
+    public int modifyDataValue(String identity, String ip,
+                                  String dataUser, String dataValue);
+
+    public ModelMap updateTokenIncident(String tokenId, String newIncident,String reason);
+
+    public ModelMap selectTokenIncident(String tokenId);
+
+    public TokenApplyForms selectApplyToken(String seqNo);
+
+    public UrgencyTask selectUrgencyTask(String seqNo,String newEndDate,String newOpenDate);
+
+
+    public int updateTokenApply(String seqNo);
+
+    public int updateUrgencyTaskBySeqNo(String seqNo);
+
+    public ModelMap isApplyFort( String seqNo,String category);
 
 
 }

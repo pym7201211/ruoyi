@@ -15,6 +15,7 @@ import com.ruoyi.forts.domain.TokenApplyFormDemo;
 import com.ruoyi.forts.service.ITokenApplyFormService;
 import com.ruoyi.ruoyiforts.domain.TokenApplyForms;
 import com.ruoyi.system.service.ISysDictDataService;
+import com.ruoyi.web.service.GeneralService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,10 +55,15 @@ public class TokenApplyFormController extends BaseController
     @Autowired
     private ISysDictDataService iSysDictDataService;
 
+    @Autowired
+    private GeneralService generalService;
+
     @RequiresPermissions("forts:form:view")
     @GetMapping()
-    public String form()
+    public String form(ModelMap map)
     {
+
+        map.put("subTeam", generalService.getAllSubTeam());
         return prefix + "/form";
     }
 
@@ -152,8 +158,9 @@ public class TokenApplyFormController extends BaseController
      * 新增令牌登记申请
      */
     @GetMapping("/add")
-    public String add()
+    public String add(ModelMap map)
     {
+        map.put("employers", generalService.selectEmployeesAll());
         return prefix + "/add";
     }
 
@@ -176,7 +183,9 @@ public class TokenApplyFormController extends BaseController
     public String edit(@PathVariable("tokenId") Long tokenId, ModelMap mmap)
     {
         TokenApplyForm tokenApplyForm = tokenApplyFormService.selectTokenApplyFormById(tokenId);
+
         mmap.put("tokenApplyForm", tokenApplyForm);
+        mmap.put("employers", generalService.selectEmployeesAll());
         return prefix + "/edit";
     }
 
@@ -203,6 +212,7 @@ public class TokenApplyFormController extends BaseController
     {
         return toAjax(tokenApplyFormService.deleteTokenApplyFormByIds(ids));
     }
+
 
     /**
      * 导入用户数据
@@ -235,11 +245,15 @@ public class TokenApplyFormController extends BaseController
                 String endDate = taf.getEndDate();
                 String environment = "1".equals(taf.getApplyEnvironment()) ? "生产环境" : "办公环境";
                 logger.info("开始调用第三方保垒机"+openDate+" "+endDate);
-                /*JSONObject httpJson = fortController.httpOpenDistinct
-                        (taf.getEmployeeId(),sdf1.format(sdf.parse(openDate)),sdf1.format(sdf.parse(endDate)));*/
-                JSONObject httpJson = fortController.httpOpenDistinct
-                        (taf.getEmployeeId(),password,environment,
-                                sdf1.format(sdf.parse(openDate)),sdf1.format(sdf.parse(endDate)));
+                JSONObject httpJson = null;
+                if (fortController.newAndOldSwitch()){
+                    httpJson = fortController.httpOpenDistinct
+                            (taf.getEmployeeId(),password,environment,
+                                    sdf1.format(sdf.parse(openDate)),sdf1.format(sdf.parse(endDate)));
+                }else {
+                    httpJson = fortController.httpOpenDistinct
+                        (taf.getEmployeeId(),sdf1.format(sdf.parse(openDate)),sdf1.format(sdf.parse(endDate)));
+                }
                 logger.info("调用第三方保垒机成功");
                 if(null != httpJson && httpJson.containsKey("code")){
                     if("2000".equals(httpJson.getString("code"))){

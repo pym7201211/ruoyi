@@ -15,7 +15,9 @@ import com.ruoyi.common.httpClient.HttpUtil;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtils;
 import com.ruoyi.common.utils.poi.ReadWps;
+import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.common.utils.sql.SqlUtil;
+import com.ruoyi.forts.domain.TokenSystemExhibition;
 import com.ruoyi.forts.domain.TokenSystemInventory;
 import com.ruoyi.forts.domain.TokenSystemInventorySo;
 import com.ruoyi.forts.service.ITokenSystemInventoryService;
@@ -25,6 +27,7 @@ import com.ruoyi.ruoyiforts.until.FortDetailedListUntil;
 import com.ruoyi.system.domain.SysDictData;
 import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.ISysDictDataService;
+import com.ruoyi.urgencyforts.domain.UrgencyTask;
 import com.ruoyi.wsdl.esbSendMessage.EsbSendMessage;
 import com.ruoyi.wsdl.esbService.PushMessageResponse;
 import io.swagger.annotations.Api;
@@ -36,6 +39,7 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -87,6 +91,7 @@ public class FortController extends BaseController {
         String pageNum = "";
         String pageSize = "";
         String employeeId = "";
+        String ip = "";
         List<HashMap<String, String>> list = new ArrayList<>();
         try{
             JSONObject jsonObject = JSON.parseObject(json);
@@ -95,10 +100,11 @@ public class FortController extends BaseController {
                 pageNum = note.getString("pageNum");
                 pageSize = note.getString("pageSize");
                 employeeId = note.getString("employeeId");
+                ip = note.getString("eventIp");
                 if(StringUtils.isNotBlank(pageNum) && StringUtils.isNotBlank(pageSize)){
                     String orderBy = SqlUtil.escapeOrderBySql("");
                     PageHelper.startPage(Integer.parseInt(pageNum), Integer.parseInt(pageSize), orderBy);
-                    List<HashMap<String, String>> hashMaps = fortService.selectApplyAndResult(employeeId);
+                    List<HashMap<String, String>> hashMaps = fortService.selectApplyAndResult(employeeId,ip);
                     if (null != hashMaps){
                         for (HashMap<String,String> map:hashMaps) {
                             list.add(transformUpperCase(map));
@@ -113,6 +119,58 @@ public class FortController extends BaseController {
             }
         }catch (Exception e){
             log.error("令牌申请首页查询接口异常：" ,e);
+        }
+        model.put("code",code);
+        model.put("msg",msg);
+        log.info("model : "+model);
+        return model;
+    }
+
+    /**
+     * 联合告警令牌申请历史查询
+     * @param //model
+     * @param //pageNum
+     * @param //pageSize
+     * @return
+     */
+    @ApiOperation("联合告警令牌申请历史查询")
+    @PostMapping("/ApplyFortIPIndex")
+    @ResponseBody
+    public ModelMap ApplyFortIPIndex(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        String code = "1";
+        String msg = "查询失败";
+        String pageNum = "";
+        String pageSize = "";
+        String systemName = "";
+        String ip = "";
+        List<HashMap<String, String>> list = new ArrayList<>();
+        try{
+            JSONObject jsonObject = JSON.parseObject(json);
+            if(null != jsonObject && jsonObject.containsKey("note")){
+                JSONObject note = (JSONObject) jsonObject.get("note");
+                pageNum = note.getString("pageNum");
+                pageSize = note.getString("pageSize");
+                systemName = note.getString("service");
+                ip = note.getString("eventIp");
+                if(StringUtils.isNotBlank(pageNum) && StringUtils.isNotBlank(pageSize)){
+                    String orderBy = SqlUtil.escapeOrderBySql("");
+                    PageHelper.startPage(Integer.parseInt(pageNum), Integer.parseInt(pageSize), orderBy);
+                    List<HashMap<String, String>> hashMaps = fortService.selectApplyAndIPResult(systemName);
+                    if (null != hashMaps){
+                        for (HashMap<String,String> map:hashMaps) {
+                            list.add(transformUpperCase(map));
+                        }
+                    }
+                    code = "0";
+                    msg = "查询成功";
+                    model.put("hashMaps",list);
+                }else{
+                    msg = "分页条数或页数未传";
+                }
+            }
+        }catch (Exception e){
+            log.error("令牌联合告警查询接口异常：" ,e);
         }
         model.put("code",code);
         model.put("msg",msg);
@@ -180,21 +238,26 @@ public class FortController extends BaseController {
                         boolean bl = fortService.insertTokenApplyForm(tokenApplyForms);
                         if (bl){
                             //if("1".equals(message.get("flag"))){
-                                JSONObject js = new JSONObject();
-                                JSONObject notes = new JSONObject();
-                                js.put("seNo",message.get("seNo"));
-                                js.put("approvalName","1");
-                                js.put("approvalStatus","1");
-                                js.put("approvalId","001");
-                                notes.put("note",js);
-                                ModelMap model1 = TokenApplyApprovals(notes.toString());
-                                if (null != model1 && model1.containsKey("code")){
+                            JSONObject js = new JSONObject();
+                            JSONObject notes = new JSONObject();
+                            js.put("seNo",message.get("seNo"));
+                            js.put("approvalName","1");
+                            js.put("approvalStatus","1");
+                            js.put("approvalId","001");
+                            notes.put("note",js);
+                            ModelMap model1 = TokenApplyApprovals(notes.toString());
+                            if (null != model1 && model1.containsKey("code")){
+                                if ("0".equals((String) model1.get("code"))){
                                     code = "0";
                                     msg = "查询成功";
+                                }else{
+                                    code = "1";
+                                    msg = (String) model1.get("msg");
                                 }
-                            //}
-                            code = "0";
-                            msg = "查询成功";
+                            }else{
+                                code = "1";
+                                msg = "调用堡垒机失败";
+                            }
                         }
                     }else{
                         msg = message.get("msg");
@@ -244,8 +307,13 @@ public class FortController extends BaseController {
                 String applyDate = sdf.format((Date)map.get("APPLY_DATE"));
                 String proposer = (String) map.get("PROPOSER");
                 if ("1".equals(approvalStatus)){
-                    //JSONObject httpJson = httpOpenDistinct(employeeId,openDate,endDate);
-                    JSONObject httpJson = httpOpenDistinct(employeeId,"",applyEnvironment,openDate,endDate);
+                    JSONObject httpJson = null;
+                    log.info("newAndOldSwitch : "+newAndOldSwitch());
+                    if (newAndOldSwitch()){
+                        httpJson = httpOpenDistinct(employeeId,"",applyEnvironment,openDate,endDate);
+                    }else {
+                        httpJson = httpOpenDistinct(employeeId,openDate,endDate);
+                    }
                     if(null != httpJson && httpJson.containsKey("code")){
                         if("2000".equals(httpJson.getString("code"))){
                             applyStatus = "堡垒机成功";
@@ -399,8 +467,13 @@ public class FortController extends BaseController {
                 String applyDate = sdf.format((Date)map.get("APPLY_DATE"));
                 String proposer = (String) map.get("PROPOSER");
                 if ("1".equals(approvalStatus)){
-                    //JSONObject httpJson = httpOpenDistinct(employeeId,openDate,endDate);
-                    JSONObject httpJson = httpOpenDistinct(employeeId,"",applyEnvironment,openDate,endDate);
+                    JSONObject httpJson = null;
+                    log.info("newAndOldSwitch : "+newAndOldSwitch());
+                    if (newAndOldSwitch()){
+                        httpJson = httpOpenDistinct(employeeId,"",applyEnvironment,openDate,endDate);
+                    }else {
+                        httpJson = httpOpenDistinct(employeeId,openDate,endDate);
+                    }
                     if(null != httpJson && httpJson.containsKey("code")){
                         if("2000".equals(httpJson.getString("code"))){
                             applyStatus = "堡垒机成功";
@@ -471,7 +544,7 @@ public class FortController extends BaseController {
                 try{
                     String ldUserId = "";
                     if (StringUtils.isNotEmpty(employeeId)){
-                        employeeId = employeeId.replaceFirst("0","");
+                        employeeId = employeeId;
                     }
                     List<HashMap<String, String>> twoOrgInfomation = fortService.getTwoOrgInfomation(employeeId);
                     log.info("sendsEmployeeAndLeaderMessage twoOrgInfomation : "+twoOrgInfomation);
@@ -481,7 +554,6 @@ public class FortController extends BaseController {
                     for (HashMap<String, String> hashMap:twoOrgInfomation) {
                         ldUserId = hashMap.get("USER_ID");
                         if (StringUtils.isNotBlank(ldUserId)){
-                            ldUserId = ldUserId.startsWith("0") ? ldUserId : "0"+ldUserId;
                             if (ldUserId.equals(approvalId)){
                                 continue;
                             }
@@ -564,6 +636,18 @@ public class FortController extends BaseController {
         }
     }
 
+    public static String beforeTime(String openTime) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try{
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(sdf.parse(openTime));
+            cal.add(Calendar.MINUTE,-2);
+            return sdf.format(cal.getTime());
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
     /**
      * HTTPclient调用第三方堡垒机接口
      * @return
@@ -578,7 +662,7 @@ public class FortController extends BaseController {
             String urlPut = configService.selectConfigByKey("token_fort_urlPut");
             String hostname = configService.selectConfigByKey("token_fort_hostname");
             log.info(urlPost +" "+urlGet+" "+urlPut);
-            String resultPost = HttpUtil.doPost(urlPost, HttpHeader.headerMap(""), paramMaps(), "UTF-8", false);
+            String resultPost = HttpUtil.doPost1(urlPost, HttpHeader.headerMap(""), paramMaps(), "UTF-8", false);
             log.info("resultPost =======>>> "+resultPost);
             JSONObject jsonObject = JSON.parseObject(resultPost);
             String st_auth_token = jsonObject.getString("ST_AUTH_TOKEN");
@@ -595,7 +679,7 @@ public class FortController extends BaseController {
             log.info("id ================>>>"+id);
 
             Map<String,String> mapPut = new HashMap<>();
-            mapPut.put("validFrom",openDate);
+            mapPut.put("validFrom",beforeTime(openDate));
             mapPut.put("validTo",endDate);
             String resultPut = HttpClientUtils.doPut(hostname, urlPut+"/"+id, HttpClientUtils.headerMap(st_auth_token), mapPut);
             log.info("resultPut ========>>> "+resultPut);
@@ -879,7 +963,7 @@ public class FortController extends BaseController {
         try{
             //获取上级领导信息
             if (StringUtils.isNotEmpty(userId)){
-                userId = userId.replaceFirst("0","");
+                userId = userId;
             }
             log.info("userId ====>>> "+userId);
             boolean leaderSend = fortService.isLeaderSend(userId);
@@ -903,13 +987,15 @@ public class FortController extends BaseController {
             for (HashMap<String, String> hashMap:twoOrgInfomation) {
                 String ldUserId = hashMap.get("USER_ID");
                 if (StringUtils.isNotBlank(ldUserId)){
-                    ldUserId = ldUserId.startsWith("0") ? ldUserId : "0"+ldUserId;
+                    ldUserId = ldUserId;
                 }
                 nos.add(ldUserId);
                 log.info("sendmessage ldUserId : "+ldUserId);
             }
             PushMessageResponse pushMessageResponse = EsbSendMessage.esbSendMessage(nos, tag, content, tag,
                     link_launchApp_approval);
+            /*PushMessageResponse pushMessageResponse = EsbSendMessage.esbSendMessage(nos, tag, content, tag,
+                    link_launchApp+"?content="+tag+",是否同意:");*/
             transtatus = pushMessageResponse.getTRANSTATUS();
             String errormsg = pushMessageResponse.getERRORMSG();
             seNo = pushMessageResponse.getSEQNO();
@@ -1151,8 +1237,29 @@ public class FortController extends BaseController {
     }
 
     /**
-     * 查询江苏银行信息系统标准化清单（2019年四季度） 科技主管团队分组的人员详情
+     * 查询江苏银行信息系统标准化清单（2019年四季度） 科技主管团队分组的系统详情
+     * 二代征信除外
+     * 2020-05-11 taochen
      */
+    @PostMapping("/seletesystemIP")
+    @ResponseBody
+    @ApiOperation("根据系统名称查询系统详情(二代征信除外)")
+    public TableDataInfo seletesystemIP(@RequestBody com.ruoyi.common.json.JSONObject param) {
+        com.ruoyi.common.json.JSONObject note = param.getObj("note");
+        String systemName = note.getStr("systemName");
+        List<TokenSystemInventory> ipList = new ArrayList<>();
+        if (systemName != null && !systemName.equals("")) {
+            ipList = tokenSystemInventoryService.selectIPInventoryList(systemName);
+            changes(ipList);
+        }
+        return getDataTable(ipList);
+    }
+
+
+
+        /**
+         * 查询江苏银行信息系统标准化清单（2019年四季度） 科技主管团队分组的人员详情
+         */
     //@RequiresPermissions("forts:inventory:list")
     @PostMapping("/seletsperson")
     @ResponseBody
@@ -1188,7 +1295,7 @@ public class FortController extends BaseController {
                     String[] useMaintainStaffs = t.getUseMaintainStaffs();
                     for (int i = 0; i < maintainUserIds.length; i++) {
                         String aa = maintainUserIds[i];
-                        String ss = aa.replaceFirst("0", "");
+                        String ss = aa;
                         String phone = fortService.selectPhone(ss);
                         String str = useMaintainStaffs[i] + "," + maintainUserIds[i]+","+phone;
                         //log.info("=============>>>"+str);
@@ -1344,7 +1451,7 @@ public class FortController extends BaseController {
                 for (HashMap<String,String> map:infoByStaff) {
                     String userId = map.get("MAINTAIN_USER_ID");
                     String userName = map.get("USE_MAINTAIN_STAFF");
-                    String ss = userId.replaceFirst("0", "");
+                    String ss = userId;
                     String phone = fortService.selectPhone(ss);
                     String listAll = userName+","+userId+","+phone;
                     list.add(listAll);
@@ -1404,7 +1511,7 @@ public class FortController extends BaseController {
         try {
             //获取上级领导信息
             if (StringUtils.isNotEmpty(userId)) {
-                userId = userId.replaceFirst("0", "");
+                userId = userId;
             }
             log.info("userId ====>>> " + userId);
             String ldUserId = "01010314";
@@ -1449,33 +1556,6 @@ public class FortController extends BaseController {
         return transtatus;
     }
 
-    public static void main(String[] args) throws Exception{
-        String aa = "{\"content\":[{\"id\":281,\"loginName\":\"01010314\",\"userName\":\"苗超\"," +
-                "\"authType\":{\"id\":101,\"name\":\"native_totpmobile\",\"type\":2," +
-                "\"configurations\":{\"rela\":\"1\",\"authtype1\":\"native\",\"authtype2\":\"totpmobile\"}," +
-                "\"enabled\":true},\"role\":{\"id\":5,\"name\":\"ROLE_USER\",\"description\":\"Operator\"," +
-                "\"icon\":\"oper_admin\",\"enabled\":true},\"department\":{\"id\":1,\"name\":\"ROOT\"," +
-                "\"description\":\"ROOT department\"},\"authInfo\":{\"passwordType\":\"custom\"," +
-                "\"loginModifyPwd\":false},\"state\":0,\"extra\":{\"hasAttribute\":{\"pin1\":false,\"pin2\":false," +
-                "\"authToken\":false,\"password\":true}},\"usergroups\":[{\"id\":6,\"name\":\"网络团队\",\"type\":0," +
-                "\"department\":{\"id\":1,\"name\":\"ROOT\",\"description\":\"ROOT department\"}}]," +
-                "\"validFrom\":\"2020-04-08 00:00:00\",\"validTo\":\"2020-04-11 00:00:00\"," +
-                "\"pwdValidType\":-1,\"updateTime\":1586315605994,\"deleted\":false,\"userType\":0,\"enabled\":true}]," +
-                "\"last\":true,\"totalElements\":1,\"totalPages\":1,\"numberOfElements\":1,\"first\":true," +
-                "\"sort\":[{\"direction\":\"DESC\",\"property\":\"updateTime\",\"ignoreCase\":false,\"nullHandling\":\"NATIVE\"," +
-                "\"descending\":true,\"ascending\":false}],\"size\":20,\"number\":0}";
-        JSONObject jsonObject = JSON.parseObject(aa);
-        log.info("=======>>>"+jsonObject);
-        String content = jsonObject.getString("content");
-        log.info("=======>>>"+content);
-        JSONArray objects = JSONObject.parseArray(content);
-        log.info("======>>>>>>>"+objects);
-        String id = objects.getJSONObject(0).getString("id");
-        log.info("id ================>>>"+id);
-
-
-    }
-
     private static String romoveDist(String str,String reg){
         String[] strs=str.split(reg);
         Set<String> set=new LinkedHashSet<>();
@@ -1488,9 +1568,294 @@ public class FortController extends BaseController {
             sb.append(it.next());
             sb.append(reg);
         }
-       sb.deleteCharAt(sb.length()-1);
+        sb.deleteCharAt(sb.length()-1);
         return sb.toString();
     }
 
+    public boolean newAndOldSwitch() throws Exception {
+        boolean bl = false;
+        try{
+            String token_date_switch = configService.selectConfigByKey("token_date_switch");
+            log.info("token_date_switch : "+token_date_switch);
+            if (StringUtils.isBlank(token_date_switch)){
+                return bl;
+            }
+            if ("off".equals(token_date_switch)){
+                return true;
+            }
+            String startDate = iSysDictDataService.selectDictLabel("token_newAndOld_date", "start_newToken_date");
+            log.info("startDate : "+startDate);
+            String endDate = iSysDictDataService.selectDictLabel("token_newAndOld_date", "end_newToken_date");
+            log.info("endDate : "+endDate);
+            if (StringUtils.isBlank(startDate) || StringUtils.isBlank(endDate)){
+                return bl;
+            }
+            log.info("compTime(startDate,endDate) : "+compTime(startDate,endDate));
+            return true == compTime(startDate,endDate) ? false : true;
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    public static boolean compTime(String startDate,String endDate) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        try {
+            Calendar date = Calendar.getInstance();
+            date.setTime(sdf.parse(sdf.format(new Date())));
+
+            Calendar begin = Calendar.getInstance();
+            begin.setTime(sdf.parse(startDate));
+
+            Calendar end = Calendar.getInstance();
+            end.setTime(sdf.parse(endDate));
+            if (date.after(begin) && date.before(end)){
+                return true;
+            }
+            return false;
+        } catch (ParseException e) {
+            throw new Exception(e);
+        }
+    }
+
+    public static void main(String[] args) throws Exception{
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(sdf.parse("20200417 10:00:00"));
+        cal.add(Calendar.MINUTE,-2);
+        System.out.println("========>>>"+sdf.format(cal.getTime()));
+    }
+
+    /**
+     * 修改数据库用户报警值
+     *
+     * @return
+     */
+    @ApiOperation("修改数据库用户报警值")
+    @PostMapping("/ModifyDataValue")
+    @ResponseBody
+    public ModelMap modifyDataValue(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        JSONObject jsonObject = JSON.parseObject(json);
+        JSONObject note = (JSONObject) jsonObject.get("note");
+        String identity = note.getString("service_id").trim();
+        String ip = note.getString("ip").trim();
+        String desc = note.getString("desc");
+        String[] descs = desc.split("_");
+        String dataUser = descs[0].toLowerCase().trim();
+        String dataValue = note.getString("data_value").trim();
+
+        int result = fortService.modifyDataValue(identity, ip, dataUser, dataValue);
+        if(result>=1){
+            model.put("code","0");
+            model.put("msg","修改成功");
+        }else{
+            model.put("code","1");
+            model.put("msg","修改失败");
+        }
+        return model;
+    }
+
+    /**
+     * 查询数据库用户报警值
+     *
+     * @return
+     */
+    @ApiOperation("查询数据库用户报警值")
+    @PostMapping("/SelectDataValue")
+    @ResponseBody
+    public ModelMap selectDataValue(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        try {
+        JSONObject jsonObject = JSON.parseObject(json);
+        JSONObject note = (JSONObject) jsonObject.get("note");
+        String identity = note.getString("service_id").trim();
+        String ip = note.getString("ip").trim();
+        String desc = note.getString("desc");
+        String[] descs = desc.split("_");
+        String dataUser = descs[0].toLowerCase().trim();
+
+        model = fortService.getDataValue(identity, ip, dataUser);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    /**
+     * 修改令牌事由
+     *
+     * @return
+     */
+    @ApiOperation("修改令牌事由")
+    @PostMapping("/UpdateTokenIncident")
+    @ResponseBody
+    public ModelMap updateTokenIncident(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        try {
+            JSONObject jsonObject = JSON.parseObject(json);
+            JSONObject note = (JSONObject) jsonObject.get("note");
+            String tokenId = note.getString("token_id");
+            String newIncident = note.getString("new_incident");
+            String reason = note.getString("reason");
+            model = fortService.updateTokenIncident(tokenId,newIncident,reason);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    /**
+     * 修改令牌事由
+     *
+     * @return
+     */
+    @ApiOperation("查询令牌事由是否修改过")
+    @PostMapping("/SelectTokenIncident")
+    @ResponseBody
+    public ModelMap selectTokenIncident(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        try {
+            JSONObject jsonObject = JSON.parseObject(json);
+            JSONObject note = (JSONObject) jsonObject.get("note");
+            String tokenId = note.getString("token_id");
+            model = fortService.selectTokenIncident(tokenId);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    /**
+     * 令牌延期申请
+     *
+     * @return
+     */
+    @ApiOperation("令牌延期申请")
+    @PostMapping("/DelayApplyFortDate")
+    @ResponseBody
+    public ModelMap delayApplyFortDate(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        try {
+            JSONObject httpJson = null;
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            SimpleDateFormat sd = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+            JSONObject jsonObject = JSON.parseObject(json);
+            log.info("AAAAAAAAAAAAAAAA"+jsonObject);
+
+            JSONObject note = (JSONObject) jsonObject.get("note");
+            String end_date = note.getString("endDate");
+            String category = note.getString("category");
+            String user_id = note.getString("userId");
+            String seqNo = note.getString("seqNo");
+            String openDistinct = note.getString("openDistinct");
+            int hour = Integer.parseInt(note.getString("hour"));
+            Date now_date = new Date();
+            if("1".equals(category)){
+                long time = sdf.parse(end_date).getTime();
+                Date date = new Date(time + hour*60*60*1000);
+                String newEndDate = sdf.format(date);//最新延长时间
+                Date old_date = new Date(now_date.getTime() - 600000);
+                String newOpenDate = sdf.format(old_date);//开始时间
+                if(old_date.getTime()>date.getTime()){
+                    model.put("code","1");
+                    model.put("msg","令牌已过期，无法申请！");
+                    return model;
+                }
+                log.info("最新延长时间:"+newEndDate+"。开始时间："+newOpenDate);
+                httpJson = httpOpenDistinct(user_id,newOpenDate,newEndDate);
+                log.info("AAAAAAAAAAAAAAAA"+httpJson);
+
+                if(null != httpJson && httpJson.containsKey("code")){
+                    if("2000".equals(httpJson.getString("code"))){
+                        int result = fortService.updateTokenApply(seqNo);
+                        if(result>0){
+                            TokenApplyForms tokenApplyForms = fortService.selectApplyToken(seqNo);
+                            log.info("BBBBDDDDD"+tokenApplyForms);
+                            tokenApplyForms.setEndDate(newEndDate);
+                            tokenApplyForms.setApplyDate(newOpenDate);
+                            tokenApplyForms.setOpenDate(newOpenDate);
+                            fortService.insertTokenApplyForm(tokenApplyForms);
+                        }
+                        model.put("code","0");
+                        model.put("msg","申请成功！");
+                        if("1".equals(openDistinct)){
+                           openDistinctExcel(user_id);
+                        }
+                    }else{
+                        //"堡垒机失败";
+                        model.put("code","1");
+                        model.put("msg",httpJson.getString("msg"));
+                        return model;
+                    }
+                }else{
+                    model.put("code","1");
+                    model.put("msg","调用保垒机失败");
+                    return model;
+                }
+            }else{
+                long time = sd.parse(end_date).getTime();
+                Date date = new Date(time + hour*60*60*1000);
+                String newEndDate = sdf.format(date);//最新延长时间
+                Date old_date = new Date(now_date.getTime() - 600000);
+                if(old_date.getTime()>date.getTime()){
+                    model.put("code","1");
+                    model.put("msg","令牌已过期，无法申请！");
+                    return model;
+                }
+                String newOpenDate = sdf.format(old_date);//开始时间
+                log.info("最新延长时间:"+newEndDate+"。开始时间："+newOpenDate);
+                httpJson = httpOpenDistinct(user_id,newOpenDate,newEndDate);
+                log.info("AAAAAAAAAAAAAAAA"+httpJson);
+
+                if(null != httpJson && httpJson.containsKey("code")){
+                    if("2000".equals(httpJson.getString("code"))){
+                        int result = fortService.updateUrgencyTaskBySeqNo(seqNo);
+                        if(result>0){
+                           fortService.selectUrgencyTask(seqNo,newEndDate,newOpenDate);
+                        }
+                        model.put("code","0");
+                        model.put("msg","申请成功！");
+                    }else{
+                        // "堡垒机失败";
+                        model.put("code","1");
+                        model.put("msg",httpJson.getString("msg"));
+                        return model;
+                    }
+                }else{
+                    model.put("code","1");
+                    model.put("msg","调用保垒机失败");
+                    return model;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    /**
+     * 查询令牌是否延期申请
+     *
+     * @return
+     */
+    @ApiOperation("查询令牌是否延期申请")
+    @PostMapping("/isApplyFort")
+    @ResponseBody
+    public ModelMap isApplyFort(@RequestBody String json){
+        ModelMap model = new ModelMap();
+        try {
+            JSONObject jsonObject = JSON.parseObject(json);
+            JSONObject note = (JSONObject) jsonObject.get("note");
+            String category = note.getString("category");
+            String seqNo = note.getString("seqNo");
+            model = fortService.isApplyFort(seqNo,category);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
 
 }

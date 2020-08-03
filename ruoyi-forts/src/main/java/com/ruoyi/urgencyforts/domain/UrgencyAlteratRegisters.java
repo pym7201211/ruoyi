@@ -190,6 +190,30 @@ public class UrgencyAlteratRegisters extends BaseEntity
     @Excel(name = "复核人确认状态")
     private String reviewerStatus;
 
+    /** 编号 */
+    @Excel(name = "编号")
+    private String identity;
+
+    /** 变更主题 */
+    @Excel(name = "变更主题")
+    private String title;
+
+    public String getIdentity() {
+        return identity;
+    }
+
+    public void setIdentity(String identity) {
+        this.identity = identity;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public void setId(Long id)
     {
         this.id = id;

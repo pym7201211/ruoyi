@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface FortDetailedListService {
 
-    public boolean selectButton(String json) throws Exception;
+    public String selectButton(String json) throws Exception;
 
     public boolean sendMessageClaim(String json,String buttonType) throws Exception;
 

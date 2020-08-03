@@ -34,6 +34,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
       select af.*, dv.user_name, dv.password from token_apply_form af
       left join token_distinct_vpn dv on af.uniquenesscode = dv.uniquenesscode
       where af.EMPLOYEE_ID = #{employeeId}
+            <if test="ip=null and ip != ''" >and af.ip=#{ip}</if>
+
+      order by af.token_id desc
+    </select>
+
+    <select id="selectApplyAndIPResult" parameterType="java.lang.String" resultType="java.util.HashMap">
+       select af.*, dv.user_name, dv.password from token_apply_form af
+       left join token_distinct_vpn dv on af.uniquenesscode = dv.uniquenesscode
+       where af.EMPLOYEE_ID in (
+       SELECT REGEXP_SUBSTR(a.maintain_user_id, '[^,]+', 1, LEVEL)
+       FROM (select *
+             from token_system_inventory a
+             where a.system_name = #{systemName}) a
+             CONNECT BY REGEXP_SUBSTR(a.maintain_user_id, '[^,]+', 1, LEVEL) IS NOT NULL
+       )
+        and to_date(to_char(af.apply_date,'yyyy-MM-dd HH24:mi:ss'),'yyyy-MM-dd HH24:mi:ss') &gt;= to_date(to_char(sysdate-7,'yyyy-MM-dd HH24:mi:ss'),'yyyy-MM-dd HH24:mi:ss')
       order by af.token_id desc
     </select>
 
@@ -197,7 +213,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
       select s.system_name ,s.use_maintain_staff,s.maintain_user_id,
       (select listagg(x.phone,',') within group (order by x.user_id)
       from token_xkstaff_department x
-      where instr(','||s.maintain_user_id||',',concat(concat(',', '0'||x.user_id), ','))>0
+      where instr(','||s.maintain_user_id||',',concat(concat(',', x.user_id), ','))>0
       ) phone from token_system_inventory s
       where s.system_id in
       <foreach item="item" collection="array" open="(" separator="," close=")">
@@ -205,7 +221,85 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
       </foreach>
     </select>
 
-    <select id="getEmployeeNo" parameterType="java.lang.String" resultType="java.lang.String">
-        select maintain_user_id from token_system_inventory where system_id = #{systemId}
+    <select id="getEmployeeNo" parameterType="java.lang.String" resultType="map">
+        select distinct maintain_user_id, c.leader_id as leaderId,a.system_name systemName
+        from token_system_inventory a
+        left join token_ip_address b
+        on a.identity = b.parent_id
+        left join urgency_director_leader c
+        on a.department_id = c.dept_id
+        where 1=1
+        <if test="systemId != null and systemId !=''">
+            and a.identity = #{systemId}
+        </if>
+        <if test="ip != null and ip !=''">
+            and b.ip = #{ip}
+        </if>
     </select>
+
+    <select id="getUpDownUser" parameterType="java.lang.String" resultType="map">
+        select to_char(wm_concat(distinct b.maintain_user_id)) maintainUser from token_updown_system a
+        left join token_system_inventory b on a.system_id = b.identity
+        where a.identity = #{systemId}
+    </select>
+
+    <select id="getBaseValue" parameterType="java.lang.String" resultType="map">
+
+    </select>
+
+    <select id="getIndexName" parameterType="java.lang.String" resultType="map">
+         with result as (
+         select LEVEL_ID,listagg(INDEX_NAME,',') within group (order by order_id) index_name from TOKEN_INDEX_LEVEL group by level_id
+          )
+         select distinct b.index_name indexName from token_ip_address a
+        left join result b on a.level_id = b.level_id
+        where a.parent_id = #{systemId} and a.ip = #{ip}
+    </select>
+
+    <select id="getDataValue" parameterType="java.lang.String" resultType="map">
+        select to_char(a.value) dataValue from token_database_ip a
+        where a.ip = #{ip} and a.data_user = #{dataUser} AND a.identity = #{systemId}
+    </select>
+
+
+    <select id="getPortNumber" parameterType="java.lang.String" resultType="map">
+        select to_char(wm_concat(distinct port_number)) portNumber from token_ip_address a where a.ip = #{ip} and a.port_number != ' '
+    </select>
+
+    <update id="modifyDataValue" parameterType="java.lang.String">
+        update token_database_ip a set a.value = #{dataValue} where  a.data_user = #{dataUser} and a.identity = #{identity}
+    </update>
+
+    <insert id="insertTokenApplyUpdate" parameterType="TokenApplyForm">
+        insert into TOKEN_INCIDENT_UPDATE
+        (token_id,old_incident,open_date,new_incident,update_date,reason) values (#{tokenId},#{openIncident},to_char(sysdate,'yyyy-MM-dd HH24:mi:ss'),null,null,null)
+    </insert>
+
+    <select id="selectMaxTokenId" resultType="long">
+        select max(token_id) from token_apply_form
+    </select>
+
+    <select id="selectTokenNewIncident" parameterType="String" resultType="int">
+        select count(*) from TOKEN_INCIDENT_UPDATE a where a.token_id = #{tokenId}
+        <if test="status != null and status !=''">
+                and a.new_incident is null
+        </if>
+    </select>
+
+    <update id="updateTokenIncident" parameterType="java.lang.String">
+        update  TOKEN_INCIDENT_UPDATE a set a.new_incident = #{newIncident},a.update_date = to_char(sysdate,'yyyy-MM-dd HH24:mi:ss'),a.reason = #{reason} where a.token_id =#{tokenId}
+    </update>
+    <update id="updateTokenApplyIncident" parameterType="java.lang.String">
+        update token_apply_form a set a.open_incident =  #{newIncident} where a.token_id = #{tokenId}
+    </update>
+
+    <select id="selectApplyToken" parameterType="String" resultMap="TokenApplyFormResult">
+        select * from token_apply_form a where a.seqno = #{seqNo}
+    </select>
+
+    <update id="updateTokenApply" parameterType="String">
+        update token_apply_form a set a.reserved3 = '1' where a.seqno =#{seqNo}
+    </update>
+
+
 </mapper>

@@ -17,6 +17,7 @@ import com.ruoyi.urgencyforts.mapper.UrgencyMapper;
 import com.ruoyi.urgencyforts.mapper.UrgencyVerifyMapper;
 import com.ruoyi.urgencyforts.service.UrgencyService;
 import com.ruoyi.urgencyforts.until.UrgencyUntil;
+import com.ruoyi.wsdl.esbSendMessage.HttpOAClientUtil;
 import org.apache.shiro.crypto.hash.Hash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,6 @@ public class UrgencyServiceImpl implements UrgencyService {
             }
             String userId = jsonClient.getString("userId");
             String systemName = jsonClient.getString("systemName");
-            userId = userId.startsWith("0") ? userId.replaceFirst("0","") : userId;
             List<String> likeSystems = urgencyMapper.getLikeSystem(userId, systemName);
             if (null == likeSystems || likeSystems.size() <= 0){
                 return UrgencyUntil.resultStatus("0","查询系统名称数据为空");
@@ -108,7 +108,6 @@ public class UrgencyServiceImpl implements UrgencyService {
                 return jsonClient;
             }
             String userId = jsonClient.getString("userId");
-            userId = userId.startsWith("0") ? userId.replaceFirst("0","") : userId;
             List<HashMap<String, String>> userInfo = urgencyMapper.getUserInfo(userId);
             List userLists = UrgencyUntil.getUserLists(userInfo);
             JSONObject jsonObject = UrgencyUntil.resultStatus("0", "查询成功");
@@ -164,7 +163,6 @@ public class UrgencyServiceImpl implements UrgencyService {
             if (StringUtils.isBlank(userId)){
                 return UrgencyUntil.resultStatus("1","客户端传入userId为空");
             }
-            userId = userId.startsWith("0") ? userId.replaceFirst("0","") : userId;
             List<HashMap<String,String>> hashMap = urgencyMapper.teamLeaderInfomation(userId);
             if (null == hashMap || hashMap.size() <= 0){
                 return UrgencyUntil.resultStatus("1","查询无团队领导数据");
@@ -197,7 +195,6 @@ public class UrgencyServiceImpl implements UrgencyService {
             if (StringUtils.isBlank(userId)){
                 return UrgencyUntil.resultStatus("1","客户端传入userId为空");
             }
-            userId = userId.startsWith("0") ? userId.replaceFirst("0","") : userId;
             List<HashMap<String,String>> hashMap = urgencyMapper.teamLeaderInfomation(userId);
             if (null == hashMap || hashMap.size() <= 0){
                 return UrgencyUntil.resultStatus("1","查询无团队领导数据");
@@ -245,6 +242,9 @@ public class UrgencyServiceImpl implements UrgencyService {
                 return jsonClient;
             }
             UrgencyAlteratRegisters urgencyAlteratRegisters = UrgencyUntil.urgencyDemos(jsonClient);
+            String category = jsonClient.getString("category");
+            selectNextIdentity(urgencyAlteratRegisters,category);
+            log.info("最终数据:"+urgencyAlteratRegisters.getTitle()+urgencyAlteratRegisters.getIdentity());
             int insertUrgency = urgencyMapper.insertUrgencyAlteratRegister(urgencyAlteratRegisters);
             if (insertUrgency > 0){
                 String orderNo = urgencyAlteratRegisters.getOrderNo();
@@ -257,12 +257,19 @@ public class UrgencyServiceImpl implements UrgencyService {
                 //发送团队领导审批
                 String position = "teamChargePos";
                 if (StringUtils.isNotBlank(operatorId)){
-                    operatorId = operatorId.startsWith("0") ? operatorId.replaceFirst("0","") : operatorId;
+                    operatorId = operatorId;
                 }
                 String affiliatedTeam = UrgencyUntil.selectAffiliatedTeam(operatorId);
-                Map<String, String> map = FortDetailedListUntil.esbSendMessage(list, affiliatedTeam+operator + "申请紧急变更", "紧急变更审批",
-                        link_launchApp+"?position="+position+"?orderNo="+orderNo);
-                if ("COMPLETE".equals(map.get("transtatus"))){
+                /*Map<String, String> map = FortDetailedListUntil.esbSendMessage(list, affiliatedTeam+operator + "申请紧急变更", "紧急变更审批",
+                        link_launchApp+"?position="+position+"?orderNo="+orderNo);*/
+                String post = "";
+                if("1".equals(category)){
+                    post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(list, urgencyAlteratRegisters.getOrderNo(), "紧急变更审批", urgencyAlteratRegisters.getTitle(),position));
+                }else{
+                    post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(list, urgencyAlteratRegisters.getOrderNo(), "非集中变更审批", urgencyAlteratRegisters.getTitle(),position));
+                }
+                //if ("COMPLETE".equals(map.get("transtatus"))){
+                if(post.indexOf("操作成功")!=-1){
                     UrgencyAlteratVerifys urgencyAlteratVerifys = UrgencyUntil.insertUrgencyVerify(urgencyAlteratRegisters);
                     int insertVerify = urgencyVerifyMapper.insertUrgencyAlteratVerify(urgencyAlteratVerifys);
                     JSONObject jsonObject = UrgencyUntil.resultStatus("0", "添加成功");
@@ -284,6 +291,7 @@ public class UrgencyServiceImpl implements UrgencyService {
     @Override
     public JSONObject getApprovalData(String json) throws Exception {
         String approvalStatus = "";
+        log.info("前端传过来的值："+json);
         try{
             JSONObject jsonClient = UrgencyUntil.clientJsonParams(json);
             if (!"0".equals(jsonClient.getString("code"))){
@@ -307,7 +315,6 @@ public class UrgencyServiceImpl implements UrgencyService {
                 //String involve_system = hashMap.get("involve_system");
                 String operator_id = hashMap.get("operator_id");
                 if (StringUtils.isNotBlank(operator_id)){
-                    operator_id = operator_id.replaceFirst("0","");
                     List<String> team = urgencyMapper.selectAffiliatedTeam(operator_id);
                     hashMap.put("affiliatedTeam",team.get(0));
                 }
@@ -374,7 +381,9 @@ public class UrgencyServiceImpl implements UrgencyService {
             String teamBranchedId = jsonClient.getString("teamBranchedId");
             String chargeLeaderId = jsonClient.getString("chargeLeaderId");
             String securityTeamId = jsonClient.getString("securityTeamId");
+
             String bigDataTeamId = jsonClient.getString("bigDataTeamId");
+
             String reviewerId = jsonClient.getString("reviewerId");
             String internet_urgency = jsonClient.getString("internet_urgency");   //是否涉及互联网变更
             String data_urgency = jsonClient.getString("data_urgency");   //是否涉及数据变更
@@ -394,194 +403,353 @@ public class UrgencyServiceImpl implements UrgencyService {
             if ("bigDataTeamPos".equals(position)){
                 bigDataTeams = approvalStatus;
             }
-            String operator = urgencyMapper.selectOperator(orderNo);
+            Map<String, Object> map = urgencyMapper.selectOperator(orderNo);
+            log.info("KKKKKKKKK"+map.toString());
+            String operator = "";
+            String title = "";
+            String identity = "";
+            operator = map.get("OPERATOR").toString();
+            title = map.get("TITLE").toString();
+            identity = map.get("IDENTITY").toString();
+            String category = "1";//标明是紧急变更还是非集中变更
+            if(identity.indexOf("NCC")!=-1){
+                category = "2";
+            }
             String operatorIds = "";
             if (StringUtils.isNotBlank(operatorId)){
-                operatorIds = operatorId.startsWith("0") ? operatorId.replaceFirst("0","") : operatorId;
+                operatorIds = operatorId;
             }
             String affiliatedTeam = UrgencyUntil.selectAffiliatedTeam(operatorIds);
-                //若是团队主管审批
-                if (StringUtils.isNotBlank(teamChargeStatus)){
-                    if ("1".equals(teamChargeStatus)){
-                        if ("1".equals(internet_urgency)){
-                            JSONObject jsonSecurity = UrgencyUntil.sendUrgencyMessage(securityTeamId,affiliatedTeam+operator+"发起紧急变更申请",
-                                    link_launchApp+"?position=securityTeamPos?orderNo="+orderNo);
+            //若是团队主管审批
+            if (StringUtils.isNotBlank(teamChargeStatus)){
+                if ("1".equals(teamChargeStatus)){
+                    if ("1".equals(internet_urgency)){
+                        List<String> teamId = new ArrayList<>();
+                        teamId.add(securityTeamId);
+                            /*JSONObject jsonSecurity = UrgencyUntil.sendUrgencyMessage(securityTeamId,affiliatedTeam+operator+"发起紧急变更申请",
+                                    link_launchApp+"?position=securityTeamPos?orderNo="+orderNo);*/
+                            String post = "";
+                            if("1".equals(category)){
+                                 post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(teamId, orderNo, "紧急变更审批", title,"securityTeamPos"));
+                            }else{
+                                 post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(teamId, orderNo, "非集中变更审批", title,"securityTeamPos"));
+                            }
+/*
                             if ("1".equals(jsonSecurity.getString("code"))){
-                                return jsonSecurity;
-                            }
+*/                          if(post.indexOf("操作成功")== -1){
+                            return UrgencyUntil.resultStatus("1", "发送消息失败");
                         }
-                        if ("1".equals(data_urgency)){
-                            JSONObject jsonBigData = UrgencyUntil.sendUrgencyMessage(bigDataTeamId,affiliatedTeam+operator+"发起紧急变更申请",
-                                    link_launchApp+"?position=bigDataTeamPos?orderNo="+orderNo);
-                            if ("1".equals(jsonBigData.getString("code"))){
+                    }
+                    if ("1".equals(data_urgency)){
+                        List<String> bigTeamId = new ArrayList<>();
+                        bigTeamId.add(bigDataTeamId);
+                            /*JSONObject jsonBigData = UrgencyUntil.sendUrgencyMessage(bigDataTeamId,affiliatedTeam+operator+"发起紧急变更申请",
+                                    link_launchApp+"?position=bigDataTeamPos?orderNo="+orderNo);*/
+                        String post = "";
+                        if("1".equals(category)){
+                             post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(bigTeamId, orderNo, "紧急变更审批", title,"bigDataTeamPos"));
+                        }else{
+                             post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(bigTeamId, orderNo, "非集中变更审批", title,"bigDataTeamPos"));
+                        }
+
+                            /*if ("1".equals(jsonBigData.getString("code"))){
                                 return jsonBigData;
-                            }
+                            }*/
+                        if(post.indexOf("操作成功")== -1){
+                            return UrgencyUntil.resultStatus("1", "发送消息失败");
                         }
-                    }else {
-                        JSONObject jsonReviewer = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人：" + userName,
-                                link_launchApp+"?position=operator?orderNo="+orderNo);
-                        if ("1".equals(jsonReviewer.getString("code"))) {
-                            return jsonReviewer;
-                        }
-                        JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, operator, userName, orderNo);
-                        if ("1".equals(jsonObject.getString("code"))){
-                            return jsonObject;
-                        }
-                        urgencyVerifyMapper.updateverifyStatus(orderNo);
-                        noFlag = false;
                     }
-                }
-                //若是团队主管，安全团队，大数据管理团队
-                if (StringUtils.isNotBlank(teamChargeStatus) ||
-                        StringUtils.isNotBlank(securityTeams) ||
-                        StringUtils.isNotBlank(bigDataTeams)){
-
-                    if ("1".equals(approvalStatus)){
-                        if ("1".equals(internet_urgency)){
-                            securityTeam = "1";
-                        }
-                        if ("1".equals(data_urgency)){
-                            bigDataTeam = "1";
-                        }
-
-                        if (StringUtils.isNotBlank(teamChargeStatus)){
-                            securityTeams = "";
-                            bigDataTeams = "";
-                        }
-                        if (StringUtils.isNotBlank(securityTeams)){
-                            int i = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeam,
-                                    null,null);
-                            if (i <= 0){
-                                return UrgencyUntil.resultStatus("1", "添加失败");
-                            }
-                            flag = false;
-                        }
-                        if (StringUtils.isNotBlank(bigDataTeams)){
-                            int i = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,null,
-                                    bigDataTeam,null);
-                            if (i <= 0){
-                                return UrgencyUntil.resultStatus("1", "添加失败");
-                            }
-                            flag = false;
-                        }
-                        int rewSecBigStatus = urgencyMapper.selectRewSecBigStatus(orderNo,securityTeam,bigDataTeam);
-                        if (rewSecBigStatus > 0){
-                            if ("true".equals(status)){
-                                    JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(teamBranchedId, affiliatedTeam+operator+"发起紧急变更申请",
-                                            link_launchApp+"?position=teamBranchedPos?orderNo="+orderNo);
-                                    if ("1".equals(jsonBranched.getString("code"))){
-                                        return jsonBranched;
-                                    }
-                            }else{
-                                    JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(chargeLeaderId, affiliatedTeam+operator+"发起紧急变更申请",
-                                            link_launchApp+"?position=chargeLeaderPos?orderNo="+orderNo);
-                                    if ("1".equals(jsonBranched.getString("code"))){
-                                        return jsonBranched;
-                                    }
-                                    urgencyMapper.updateManageStatus("1",orderNo);
-
-                            }
-                        }
+                }else {
+                    List<String> operatId = new ArrayList<>();
+                    operatId.add(operatorId);
+                        /*JSONObject jsonReviewer = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人：" + userName,
+                                link_launchApp+"?position=operator?orderNo="+orderNo);*/
+                    String post = "";
+                    if("1".equals(category)){
+                         post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatId, orderNo, "您的紧急变更申请已拒绝", title,"operator"));
                     }else{
-                        if (noFlag){
-                            JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人："+userName,
-                                    link_launchApp+"?position=operator?orderNo="+orderNo);
-                            if ("1".equals(jsonBranched.getString("code"))){
-                                return jsonBranched;
-                            }
-                            JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, operator, userName, orderNo);
-                            if ("1".equals(jsonObject.getString("code"))){
-                                return jsonObject;
-                            }
-                        }
-                        //为拒绝时更改验证状态
-                        urgencyVerifyMapper.updateverifyStatus(orderNo);
-                        int aa = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeams,
-                                bigDataTeams,reviewerStatus);
-                        return aa > 0 ? UrgencyUntil.resultStatus("0", "添加成功") : UrgencyUntil.resultStatus("1", "添加失败");
+                         post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatId, orderNo, "您的非集中变更申请已拒绝", title,"operator"));
                     }
+
+                       /* if ("1".equals(jsonReviewer.getString("code"))) {
+                            return jsonReviewer;
+                        }*/
+                    if(post.indexOf("操作成功")== -1){
+                        return UrgencyUntil.resultStatus("1", "发送消息失败");
+                    }
+                    JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, title, category, orderNo);
+                    if ("1".equals(jsonObject.getString("code"))){
+                        return jsonObject;
+                    }
+                    urgencyVerifyMapper.updateverifyStatus(orderNo);
+                    noFlag = false;
                 }
-                //若是分管领导
-                if (StringUtils.isNotBlank(teamBranchedStatus)){
-                    if ("1".equals(teamBranchedStatus)){
-                        JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(chargeLeaderId, affiliatedTeam+operator+"发起紧急变更申请",
-                                link_launchApp+"?position=chargeLeaderPos?orderNo="+orderNo);
-                        if ("1".equals(jsonBranched.getString("code"))){
-                            return jsonBranched;
+            }
+            //若是团队主管，安全团队，大数据管理团队
+            if (StringUtils.isNotBlank(teamChargeStatus) ||
+                    StringUtils.isNotBlank(securityTeams) ||
+                    StringUtils.isNotBlank(bigDataTeams)){
+
+                if ("1".equals(approvalStatus)){
+                    if ("1".equals(internet_urgency)){
+                        securityTeam = "1";
+                    }
+                    if ("1".equals(data_urgency)){
+                        bigDataTeam = "1";
+                    }
+
+                    if (StringUtils.isNotBlank(teamChargeStatus)){
+                        securityTeams = "";
+                        bigDataTeams = "";
+                    }
+                    if (StringUtils.isNotBlank(securityTeams)){
+                        int i = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeam,
+                                null,null);
+                        if (i <= 0){
+                            return UrgencyUntil.resultStatus("1", "添加失败");
                         }
-                        urgencyMapper.updateManageStatus("1",orderNo);
-                    }else {
-                        JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人：" + userName,
-                                link_launchApp+"?position=operator?orderNo="+orderNo);
-                        if ("1".equals(jsonBranched.getString("code"))) {
-                            return jsonBranched;
+                        flag = false;
+                    }
+                    if (StringUtils.isNotBlank(bigDataTeams)){
+                        int i = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,null,
+                                bigDataTeam,null);
+                        if (i <= 0){
+                            return UrgencyUntil.resultStatus("1", "添加失败");
                         }
-                        JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, operator, userName, orderNo);
+                        flag = false;
+                    }
+                    int rewSecBigStatus = urgencyMapper.selectRewSecBigStatus(orderNo,securityTeam,bigDataTeam);
+                    if (rewSecBigStatus > 0){
+                        if ("true".equals(status)){
+
+                            List<String> teamBranchId = new ArrayList<>();
+                            teamBranchId.add(teamBranchedId);
+                                /*JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(teamBranchedId, affiliatedTeam+operator+"发起紧急变更申请",
+                                            link_launchApp+"?position=teamBranchedPos?orderNo="+orderNo);*/
+                            String post = "";
+                            if("1".equals(category)){
+                                 post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(teamBranchId, orderNo, "紧急变更申请", title,"teamBranchedPos"));
+
+                            }else{
+                                post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(teamBranchId, orderNo, "非集中变更申请", title,"teamBranchedPos"));
+                            }
+                            if(post.indexOf("操作成功")== -1){
+                                return UrgencyUntil.resultStatus("1", "发送消息失败");
+                            }
+                                /*if ("1".equals(jsonBranched.getString("code"))){
+                                        return jsonBranched;
+                                    }*/
+                        }else{
+                            log.info("CCCCCCCCCCCCCCCCC"+chargeLeaderId);
+
+                            List<String> chargeLeaderIds = new ArrayList<>();
+                            chargeLeaderIds.add(chargeLeaderId);
+                                /*JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(chargeLeaderId, affiliatedTeam+operator+"发起紧急变更申请",
+                                            link_launchApp+"?position=chargeLeaderPos?orderNo="+orderNo);*/
+                            String post = "";
+                            if("1".equals(category)){
+                                 post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(chargeLeaderIds, orderNo, "紧急变更申请", title,"chargeLeaderPos"));
+                            }else{
+                                post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(chargeLeaderIds, orderNo, "非集中变更申请", title,"chargeLeaderPos"));
+                            }
+                            if(post.indexOf("操作成功")== -1){
+                                return UrgencyUntil.resultStatus("1", "发送消息失败");
+                            }
+                                /*if ("1".equals(jsonBranched.getString("code"))){
+                                        return jsonBranched;
+                                    }*/
+                            urgencyMapper.updateManageStatus("1",orderNo);
+
+                        }
+                    }
+                }else{
+                    if (noFlag){
+                        log.info("DDDDDDDDDDDD"+operatorId);
+
+                        List<String> operatorIdss = new ArrayList<>();
+                        operatorIdss.add(operatorId);
+                            /*JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人："+userName,
+                                    link_launchApp+"?position=operator?orderNo="+orderNo);*/
+                        String post = "";
+                        if("1".equals(category)){
+                             post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdss, orderNo, "您的紧急变更申请已拒绝", title,"operator"));
+                        }else{
+                            post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdss, orderNo, "您的非集中变更申请已拒绝", title,"operator"));
+                        }
+                        if(post.indexOf("操作成功")== -1){
+                            return UrgencyUntil.resultStatus("1", "发送消息失败");
+                        }
+                            /*if ("1".equals(jsonBranched.getString("code"))){
+                                return jsonBranched;
+                            }*/
+                        JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, title, category, orderNo);
                         if ("1".equals(jsonObject.getString("code"))){
                             return jsonObject;
                         }
-                        //为拒绝时更改验证状态
-                        urgencyVerifyMapper.updateverifyStatus(orderNo);
                     }
+                    //为拒绝时更改验证状态
+                    urgencyVerifyMapper.updateverifyStatus(orderNo);
+                    int aa = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeams,
+                            bigDataTeams,reviewerStatus);
+                    return aa > 0 ? UrgencyUntil.resultStatus("0", "添加成功") : UrgencyUntil.resultStatus("1", "添加失败");
                 }
-                //若是变更主管
-                if (StringUtils.isNotBlank(chargeLeaderStatus)){
-                    urgencyMapper.updateManageStatus("2",orderNo);
-                    if ("1".equals(chargeLeaderStatus)){
-                        HashMap<String, String> approvalData = urgencyMapper.getApprovalData(orderNo);
-                        if (null != approvalData && approvalData.size() > 0){
-                            if (StringUtils.isBlank(reviewerId)){
-                                return UrgencyUntil.resultStatus("1", "查询发送消息复核人id失败");
-                            }
-                            String[] reviewerIds = reviewerId.split(",");
-                            for (String id : reviewerIds) {
-                                JSONObject jsonReviewers = UrgencyUntil.sendUrgencyMessage(id, affiliatedTeam+operator+"申请的紧急变更申请已通过 审批人：" + userName,
-                                        link_launchApp+"?position=reviewers?orderNo="+orderNo);
-                                if ("1".equals(jsonReviewers.getString("code"))) {
-                                    return jsonReviewers;
-                                }
-                            }
-                            String runTeam = urgencyMapper.selectRunTeam();
-                            runTeam = runTeam.startsWith("0") ? runTeam : "0"+runTeam;
-                            JSONObject jsonRunTeam = UrgencyUntil.sendUrgencyMessage(runTeam, affiliatedTeam+operator+"申请的紧急变更申请已通过 审批人：" + userName,
-                                    link_launchApp+"?position=runTeam?orderNo="+orderNo);
-                            if ("1".equals(jsonRunTeam.getString("code"))) {
-                                return jsonRunTeam;
-                            }
-                            List<SysDictData> urgency_sendMessage = dictDataMapper.selectDictDataByType("urgency_sendMessage");
-                            if (null != urgency_sendMessage && urgency_sendMessage.size() > 0){
-                                for(int i = 0;i <urgency_sendMessage.size();i++){
-                                    String label = urgency_sendMessage.get(i).getDictLabel();
-                                    String value = urgency_sendMessage.get(i).getDictValue();
-                                    JSONObject sendUrgencyMessage = UrgencyUntil.sendUrgencyMessage(value, affiliatedTeam+operator+"申请的紧急变更申请已通过 审批人：" + userName,
-                                            link_launchApp+"?position=runTeam?orderNo="+orderNo);
-                                    if ("1".equals(jsonRunTeam.getString("code"))) {
-                                        continue;
-                                    }
-                                }
-                            }
-                            String openIncident = dictDataMapper.selectDictLabel("token_openIncident", "jjbg");
-                            JSONObject jsonObject = UrgencyUntil.urgencyApplyFort(approvalData,openIncident,orderNo);
-                            if ("0".equals(jsonObject.getString("code"))){
-                                int i = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeam,
-                                        bigDataTeam,reviewerStatus);
-                                if (i < 0){
-                                    return UrgencyUntil.resultStatus("1", "添加失败");
-                                }
-                            }else{
-                                return UrgencyUntil.resultStatus("0", jsonObject.getString("msg"));
-                            }
-                            return UrgencyUntil.resultStatus("0", "添加成功");
-                        }
-                    }else {
-                        JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人："+userName,
-                                link_launchApp+"?position=reviewer?orderNo="+orderNo);
-                        if ("1".equals(jsonBranched.getString("code"))){
+            }
+            //若是分管领导
+            if (StringUtils.isNotBlank(teamBranchedStatus)){
+                if ("1".equals(teamBranchedStatus)){
+                    List<String> chargeLeaderIds = new ArrayList<>();
+                    chargeLeaderIds.add(chargeLeaderId);
+                        /*JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(chargeLeaderId, affiliatedTeam+operator+"发起紧急变更申请",
+                                link_launchApp+"?position=chargeLeaderPos?orderNo="+orderNo);*/
+                    String post = "";
+                    if("1".equals(category)){
+                         post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(chargeLeaderIds, orderNo, "紧急变更申请", title,"chargeLeaderPos"));
+                    }else{
+                        post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(chargeLeaderIds, orderNo, "非集中变更申请", title,"chargeLeaderPos"));
+                    }
+                    if(post.indexOf("操作成功")== -1){
+                        return UrgencyUntil.resultStatus("1", "发送消息失败");
+                    }
+                        /*if ("1".equals(jsonBranched.getString("code"))){
                             return jsonBranched;
-                        }
+                        }*/
+                    urgencyMapper.updateManageStatus("1",orderNo);
+                }else {
+                    List<String> operatorIdes = new ArrayList<>();
+                    operatorIdes.add(operatorId);
+                        /*JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人：" + userName,
+                                link_launchApp+"?position=operator?orderNo="+orderNo);*/
+                    String post = "";
+                    if("1".equals(category)){
+                         post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdes, orderNo, "您的紧急变更申请已拒绝", title,"operator"));
+                    }else{
+                        post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdes, orderNo, "您的非集中变更申请已拒绝", title,"operator"));
+                    }
+                    if(post.indexOf("操作成功")== -1){
+                        return UrgencyUntil.resultStatus("1", "发送消息失败");
+                    }
+                        /*if ("1".equals(jsonBranched.getString("code"))) {
+                            return jsonBranched;
+                        }*/
+                    JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, title, category, orderNo);
+                    if ("1".equals(jsonObject.getString("code"))){
+                        return jsonObject;
+                    }
+                    //为拒绝时更改验证状态
+                    urgencyVerifyMapper.updateverifyStatus(orderNo);
+                }
+            }
+            //若是变更主管
+            if (StringUtils.isNotBlank(chargeLeaderStatus)){
+                urgencyMapper.updateManageStatus("2",orderNo);
+                if ("1".equals(chargeLeaderStatus)){
+                    HashMap<String, String> approvalData = urgencyMapper.getApprovalData(orderNo);
+                    if (null != approvalData && approvalData.size() > 0){
                         if (StringUtils.isBlank(reviewerId)){
-                            return UrgencyUntil.resultStatus("1", "查询发送复核人id失败");
+                            return UrgencyUntil.resultStatus("1", "查询发送消息复核人id失败");
                         }
+                        String[] reviewerIds = reviewerId.split(",");
+                        for (String id : reviewerIds) {
+                            List<String> ids = new ArrayList<>();
+                            ids.add(id);
+                                /*JSONObject jsonReviewers = UrgencyUntil.sendUrgencyMessage(id, affiliatedTeam+operator+"申请的紧急变更申请已通过 审批人：" + userName,
+                                        link_launchApp+"?position=reviewers?orderNo="+orderNo);*/
+                            String post = "";
+                            if("1".equals(category)){
+                                 post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(ids, orderNo, "申请的紧急变更申请已通过", title,"reviewers"));
+                            }else{
+                                post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(ids, orderNo, "申请的非集中变更申请已通过", title,"reviewers"));
+                            }
+
+                            if(post.indexOf("操作成功")== -1){
+                                return UrgencyUntil.resultStatus("1", "发送消息失败");
+                            }
+                                /*if ("1".equals(jsonReviewers.getString("code"))) {
+                                    return jsonReviewers;
+                                }*/
+                        }
+                        String runTeam = urgencyMapper.selectRunTeam();
+                        List<String> runTeams = new ArrayList<>();
+                        runTeams.add(runTeam);
+                            /*JSONObject jsonRunTeam = UrgencyUntil.sendUrgencyMessage(runTeam, affiliatedTeam+operator+"申请的紧急变更申请已通过 审批人：" + userName,
+                                    link_launchApp+"?position=runTeam?orderNo="+orderNo);*/
+                        String post = "";
+                        if("1".equals(category)){
+                             post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(runTeams, orderNo, "申请的紧急变更申请已通过", title,"runTeam"));
+                        }else{
+                            post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(runTeams, orderNo, "申请的非集中变更申请已通过", title,"runTeam"));
+                        }
+                        List<String> operatorIdes = new ArrayList<>();
+                        operatorIdes.add(operatorId);
+                        if("1".equals(category)){
+                            post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdes, orderNo, "申请的紧急变更申请已通过", title,"runTeam"));
+                        }else{
+                            post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdes, orderNo, "申请的非集中变更申请已通过", title,"runTeam"));
+                        }
+                        if(post.indexOf("操作成功")== -1){
+                            return UrgencyUntil.resultStatus("1", "发送消息失败");
+                        }
+                            /*if ("1".equals(jsonRunTeam.getString("code"))) {
+                                return jsonRunTeam;
+                            }*/
+                        List<SysDictData> urgency_sendMessage = dictDataMapper.selectDictDataByType("urgency_sendMessage");
+                        if (null != urgency_sendMessage && urgency_sendMessage.size() > 0){
+                            for(int i = 0;i <urgency_sendMessage.size();i++){
+                                String label = urgency_sendMessage.get(i).getDictLabel();
+                                String value = urgency_sendMessage.get(i).getDictValue();
+                                List<String> valueUser = new ArrayList<>();
+                                valueUser.add(value);
+                                /*JSONObject sendUrgencyMessage = UrgencyUntil.sendUrgencyMessage(value, affiliatedTeam+operator+"申请的紧急变更申请已通过 审批人：" + userName,
+                                        link_launchApp+"?position=runTeam?orderNo="+orderNo);*/
+                                String posts = "";
+                                if("1".equals(category)){
+                                     posts = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(valueUser, orderNo, "申请的紧急变更申请已通过", title,"runTeam"));
+                                }else{
+                                     posts = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(valueUser, orderNo, "申请的非集中变更申请已通过", title,"runTeam"));
+                                }
+
+                                    /*if ("1".equals(jsonRunTeam.getString("code"))) {
+                                        continue;
+                                    }*/
+                                if(posts.indexOf("操作成功")== -1){
+                                    continue;
+                                }
+                            }
+                        }
+                        String openIncident = dictDataMapper.selectDictLabel("token_openIncident", "jjbg");
+                        JSONObject jsonObject = UrgencyUntil.urgencyApplyFort(approvalData,openIncident,orderNo);
+                        if ("0".equals(jsonObject.getString("code"))){
+                            int i = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeam,
+                                    bigDataTeam,reviewerStatus);
+                            if (i < 0){
+                                return UrgencyUntil.resultStatus("1", "添加失败");
+                            }
+                        }else{
+                            return UrgencyUntil.resultStatus("0", jsonObject.getString("msg"));
+                        }
+                        return UrgencyUntil.resultStatus("0", "添加成功");
+                    }
+                }else {
+                    List<String> operatorIdse = new ArrayList<>();
+                    operatorIdse.add(operatorId);
+                        /*JSONObject jsonBranched = UrgencyUntil.sendUrgencyMessage(operatorId, "您的紧急变更申请已拒绝 拒绝人："+userName,
+                                link_launchApp+"?position=reviewer?orderNo="+orderNo);*/
+                    String post = "";
+                    if("1".equals(category)){
+                         post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdse, orderNo, "您的紧急变更申请已拒绝", title,"reviewer"));
+                    }else{
+                        post = HttpOAClientUtil.post(HttpOAClientUtil.getSoapStr(operatorIdse, orderNo, "您的非集中变更申请已拒绝", title,"reviewer"));
+                    }
+
+                        /*if ("1".equals(jsonBranched.getString("code"))){
+                            return jsonBranched;
+                        }*/
+                    if(post.indexOf("操作成功")== -1){
+                        return UrgencyUntil.resultStatus("1", "发送消息失败");
+                    }
+                    if (StringUtils.isBlank(reviewerId)){
+                        return UrgencyUntil.resultStatus("1", "查询发送复核人id失败");
+                    }
                         /*String[] reviewerIds = reviewerId.split(",");
                         for (String id : reviewerIds) {
                             JSONObject jsonReviewers = UrgencyUntil.sendUrgencyMessage(id, operator+"申请的紧急变更申请已拒绝 拒绝人：" + userName,
@@ -590,25 +758,25 @@ public class UrgencyServiceImpl implements UrgencyService {
                                 return jsonReviewers;
                             }
                         }*/
-                        JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, operator, userName, orderNo);
-                        if ("1".equals(jsonObject.getString("code"))){
-                            return jsonObject;
-                        }
-                        //为拒绝时更改验证状态
-                        urgencyVerifyMapper.updateverifyStatus(orderNo);
+                    JSONObject jsonObject = UrgencyUntil.sendReviewer(reviewerId, title, category, orderNo);
+                    if ("1".equals(jsonObject.getString("code"))){
+                        return jsonObject;
                     }
+                    //为拒绝时更改验证状态
+                    urgencyVerifyMapper.updateverifyStatus(orderNo);
                 }
-                if (StringUtils.isNotBlank(teamChargeStatus)){
-                    securityTeam = "";
-                    bigDataTeam = "";
-                }
-                if (flag){
-                    iss = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeam,
-                            bigDataTeam,reviewerStatus);
-                    return iss > 0 ? UrgencyUntil.resultStatus("0", "添加成功") : UrgencyUntil.resultStatus("1", "添加失败");
-                }else {
-                    return UrgencyUntil.resultStatus("0", "添加成功");
-                }
+            }
+            if (StringUtils.isNotBlank(teamChargeStatus)){
+                securityTeam = "";
+                bigDataTeam = "";
+            }
+            if (flag){
+                iss = urgencyMapper.updateSignStatus(orderNo, teamChargeStatus, teamBranchedStatus, chargeLeaderStatus,securityTeam,
+                        bigDataTeam,reviewerStatus);
+                return iss > 0 ? UrgencyUntil.resultStatus("0", "添加成功") : UrgencyUntil.resultStatus("1", "添加失败");
+            }else {
+                return UrgencyUntil.resultStatus("0", "添加成功");
+            }
 //            }
         }catch (Exception e){
             throw new Exception(e);
@@ -682,21 +850,48 @@ public class UrgencyServiceImpl implements UrgencyService {
     @Override
     public JSONObject selectUrgencyHistory(String json) throws Exception {
         try{
-            JSONObject jsonClient = UrgencyUntil.clientJsonParams(json);
-            if (!"0".equals(jsonClient.getString("code"))){
-                return jsonClient;
-            }
+            JSONObject jsonObject1 = JSON.parseObject(json);
+            JSONObject note = (JSONObject) jsonObject1.get("note");
 
-            String operatorId = jsonClient.getString("operatorId");
+            String operatorId = note.getString("operatorId");
+            String category = note.getString("category");
+            String ip = "";
             if (StringUtils.isBlank(operatorId)){
                 return UrgencyUntil.resultStatus("1", "operatorId为null");
             }
-            List<HashMap<String, String>> hashMaps = urgencyMapper.selectUrgencyHistory(operatorId);
-            operatorId = operatorId.replaceFirst("0","");
+            List<HashMap<String, String>> hashMaps = urgencyMapper.selectUrgencyHistory(operatorId,ip,category);
+
             List<String> team = urgencyMapper.selectAffiliatedTeam(operatorId);
+
             JSONObject jsonObject = UrgencyUntil.resultStatus("0", "查询成功");
             jsonObject.put("list",hashMaps);
             jsonObject.put("affiliatedTeam",team.get(0));
+            return jsonObject;
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    /**
+     * 查询联合告警紧急变更历史
+     * @param json
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public JSONObject selectUrgencyIPHistory(String json) throws Exception {
+        try{
+            JSONObject jsonObject1 = JSON.parseObject(json);
+            JSONObject note = (JSONObject) jsonObject1.get("note");
+            String systemName = note.getString("service");
+            if (StringUtils.isBlank(systemName)){
+                return UrgencyUntil.resultStatus("1", "systemName为null");
+            }
+            List<HashMap<String, String>> urgencyIPList = urgencyMapper.selectUrgencyIPHistory(systemName);
+            List<HashMap<String, String>> teamList = urgencyMapper.selectAffiliatedIPTeam(systemName);
+            JSONObject jsonObject = UrgencyUntil.resultStatus("0", "查询成功");
+            jsonObject.put("list",urgencyIPList);
+            jsonObject.put("affiliatedTeam",teamList);
             return jsonObject;
         }catch (Exception e){
             throw new Exception(e);
@@ -788,7 +983,6 @@ public class UrgencyServiceImpl implements UrgencyService {
                 return jsonClient;
             }
             String userId = jsonClient.getString("userId");
-            userId = userId.startsWith("0") ? userId.replaceFirst("0","") : userId;
             String twoDeptOrg = urgencyMapper.selectTwoDeptOrg(userId);
             if (StringUtils.isBlank(twoDeptOrg)){
                 return UrgencyUntil.resultStatus("1","查询无部门号");
@@ -904,6 +1098,31 @@ public class UrgencyServiceImpl implements UrgencyService {
         }
     }
 
+    public void selectNextIdentity(UrgencyAlteratRegisters urgencyAlteratRegisters,String category){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        String identity = sdf.format(new Date());
+        //获取下一个id
+        String start = "UC";
+        Map<String, Object> mapId = new HashMap<>();
+        if("1".equals(category)){
+            mapId = urgencyMapper.selectNextId(identity);
+            if(!mapId.get("IDENTITY").toString().equals(" ")){
+                urgencyAlteratRegisters.setIdentity(start+mapId.get("IDENTITY").toString());
+            }else{
+                urgencyAlteratRegisters.setIdentity(start+identity+"001");
+            }
+        }else{
+            start = "NCC";
+            mapId = urgencyMapper.selectNextNccId(identity);
+            if(!mapId.get("IDENTITY").toString().equals(" ")){
+                urgencyAlteratRegisters.setIdentity(start+mapId.get("IDENTITY").toString());
+            }else{
+                urgencyAlteratRegisters.setIdentity(start+identity+"001");
+            }
+        }
+
+    }
+
     @Override
     public JSONObject noApprovalData() throws Exception {
         try{
@@ -913,7 +1132,6 @@ public class UrgencyServiceImpl implements UrgencyService {
             for (HashMap<String,String> hashMap : hashMaps) {
                 String operator_id = hashMap.get("OPERATOR_ID");
                 if (StringUtils.isNotBlank(operator_id)){
-                    operator_id = operator_id.replaceFirst("0","");
                     List<String> team = urgencyMapper.selectAffiliatedTeam(operator_id);
                     hashMap.put("affiliatedTeam",team.get(0));
                 }

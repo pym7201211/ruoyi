@@ -21,6 +21,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="systemId"    column="system_id"    />
         <result property="leaderId"    column="leader_id"    />
         <result property="leaderName"    column="leader_name"    />
+        <result property="upName"    column="up_name"    />
+        <result property="downName"    column="down_name"    />
+    </resultMap>
+
+    <resultMap id="TokenSystemExhibitionResult" type="TokenSystemExhibition">
+        <result property="purposePort"    column="purpose_port"    />
+        <result property="ipList"    column="ip_list"    />
+        <result property="indexName"    column="index_name"    />
     </resultMap>
 
     <sql id="selectTokenSystemInventoryVo">
@@ -78,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="systemId != null  and systemId != ''">system_id,</if>
             <if test="leaderId != null  and leaderId != ''">leader_id,</if>
             <if test="leaderName != null  and leaderName != ''">leader_name,</if>
+            <if test="gradeClassify != null  and gradeClassify != ''">identity,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null ">#{id},</if>
@@ -96,6 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="systemId != null  and systemId != ''">#{systemId},</if>
             <if test="leaderId != null  and leaderId != ''">#{leaderId},</if>
             <if test="leaderName != null  and leaderName != ''">#{leaderName},</if>
+            <if test="gradeClassify != null  and gradeClassify != ''">#{gradeClassify}||(select case when count(*) = 0 then '1' else LPAD (SUBSTR(max(IDENTITY),2)+1,'3','0') end from token_system_inventory where identity  like concat(concat('%', #{gradeClassify}), '%')),</if>
         </trim>
     </insert>
 
@@ -180,4 +190,58 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
 
+    <select id="selectIPInventoryList" parameterType="String" resultMap="TokenSystemExhibitionResult">
+        with systemName as (
+            select a.identity from token_system_inventory a where a.system_name = #{systemName}
+        ),
+        indexResult as (
+        select LEVEL_ID,listagg(INDEX_NAME,',') within group (order by order_id) index_name from TOKEN_INDEX_LEVEL group by level_id
+        )
+            select a.purpose  as purpose_port, '''' || regexp_replace(to_char(wm_concat(a.ip)),',',''',''') || '''' ip_list
+            ,to_char(wm_concat(distinct b.index_name)) index_name
+            from
+            token_ip_address a
+            left join indexResult b on a.level_id = b.level_id
+            where a.port_number = ' '
+            and a.parent_id = (select * from systemName)
+            group by a.purpose
+            union all
+            select a.purpose || ':' || a.port_number as purpose_port,'''' || regexp_replace(to_char(wm_concat(a.ip )),',',''',''') || '''' ip_list
+         ,to_char(wm_concat(distinct b.index_name)) index_name
+         from token_ip_address a
+            left join indexResult b on a.level_id = b.level_id
+            where a.port_number != ' '
+            and a.parent_id = (select * from systemName)
+            group by a.purpose || ':' || a.port_number
+    </select>
+
+    <select id="selectUpDownSystemList" parameterType="String" resultMap="TokenSystemInventoryResult">
+            select to_char(wm_concat((CASE
+                           when (b.sign = '1' or b.sign is null) then
+                            ''
+                           else
+                            c.system_name
+                         end))) down_name,
+       to_char(wm_concat((CASE
+                           when (b.sign = '2' or b.sign is null) then
+                            ''
+                           else
+                            c.system_name
+                         end))) up_name
+
+        from token_system_inventory a
+        left join token_updown_system b
+         on a.identity = b.identity
+        left join token_system_inventory c
+         on b.system_id = c.identity
+        where a.system_name = #{systemName}
+    </select>
+
+    <select id="selectDatabaseIp" parameterType="java.lang.String" resultType="java.util.HashMap">
+        select a.data_user,
+        '''' || regexp_replace(to_char(wm_concat(a.ip)), ',', ''',''') || '''' || ':' || a.data_user ip_list
+        from token_database_ip a
+        where a.identity = (select a.identity from token_system_inventory a where a.system_name = #{systemName})
+        group by a.data_user
+    </select>
 </mapper>

@@ -54,6 +54,8 @@
         <result property="applyEnvironment"    column="apply_environment"    />
     </resultMap>
 
+
+
     <sql id="selectTokenApplyFormVo">
         select apply_status,ip, open_date, end_date, addway, open_incident, open_incident_id,
         remark, applycount, uniquenesscode, seqno, other_system, approval_status, reserved1,
@@ -68,7 +70,7 @@
         proposer, apply_date, employee_id, apply_status, open_instructions,science_charge_team
         from token_apply_form a
         left join token_xkstaff_department x
-        on a.employee_id = '0'||x.user_id
+        on a.employee_id = x.user_id
         left join token_system_inventory s
         on x.two_dept_org = s.department_id
         <where>
@@ -101,14 +103,14 @@
             <if test="openDistinct != null  and openDistinct != ''"> and open_distinct = #{openDistinct}</if>
             <if test="systemName != null  and systemName != ''"> and system_name like concat(concat('%', #{systemName}), '%')</if>
             <if test="applyEnvironment != null  and applyEnvironment != ''"> and apply_environment = #{applyEnvironment}</if>
-            <if test="proposer != null  and proposer != ''"> and a.proposer = #{proposer}</if>
+            <if test="proposer != null  and proposer != ''"> and a.proposer  like concat(concat('%', #{proposer}), '%')</if>
             <if test="params.beginApplyDate != null and params.beginApplyDate != ''"><!-- 开始时间检索 -->
                 and a.apply_date &gt;= to_date(#{params.beginApplyDate},'yyyy-MM-dd HH24:mi:ss')
             </if>
             <if test="params.endApplyDate != null and params.endApplyDate != ''"><!-- 结束时间检索 -->
                 and a.apply_date &lt;= to_date(#{params.endApplyDate},'yyyy-MM-dd HH24:mi:ss')
             </if>
-            <if test="employeeId != null  and employeeId != ''"> and a.employee_id = #{employeeId}</if>
+            <if test="employeeId != null  and employeeId != ''"> and a.employee_id  like concat(concat('%', #{employeeId}), '%')</if>
             <if test="openInstructions != null  and openInstructions != ''"> and open_instructions = #{openInstructions}</if>
             <if test="params.scienceChargeTeam != null and params.scienceChargeTeam != ''">
                 and science_charge_team like concat(concat('%', #{params.scienceChargeTeam}), '%')
@@ -270,5 +272,15 @@
             #{tokenId}
         </foreach>
     </delete>
+
+    <select id="selectTokenAutoDelayList" parameterType="String" resultMap="TokenApplyFormResult">
+        select * from token_apply_form a where a.reserved2 is null and a.seqno not in (
+        select seq_no from urgency_task
+        ) and a.approval_status = '1' and a.end_date between sysdate and  sysdate+0.25/24
+    </select>
+
+    <update id="updateTokenAutoDelay" parameterType="String">
+        update token_apply_form a set a.reserved2 = '1' where a.seqno = #{seqno}
+    </update>
 
 </mapper>

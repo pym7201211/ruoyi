@@ -193,7 +193,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="getManagerId" parameterType="java.lang.String" resultType="java.lang.String">
-        select distinct '0'||user_id from TOKEN_XKSTAFF_DEPARTMENT where user_name = #{userName}
+        select distinct user_id from TOKEN_XKSTAFF_DEPARTMENT where user_name = #{userName}
     </select>
 
     <select id="selectDendrogramData" resultType="java.util.HashMap">
@@ -206,7 +206,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SUM (valueNum - cum) AS chat,
         ROUND (
         (
-        (SUM(cum) + SUM(week)) / SUM (valueNum)
+        SUM(cum)  / SUM (valueNum)
         ),
         2
         ) * 100 AS pro

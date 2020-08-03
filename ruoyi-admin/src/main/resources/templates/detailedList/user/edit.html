@@ -2,6 +2,7 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" >
 <head>
     <th:block th:include="include :: header('修改搜索系统人员')" />
+    <th:block th:include="include :: select2-css" />
 </head>
 <body class="white-bg">
     <div class="wrapper wrapper-content animated fadeInRight ibox-content">
@@ -19,21 +20,28 @@
                     <input name="teamName" th:field="*{teamName}" class="form-control" type="text">
                 </div>
             </div>
-            <div class="form-group">    
+            <div class="form-group" style="display:none">
                 <label class="col-sm-3 control-label">员工id：</label>
                 <div class="col-sm-8">
-                    <input name="userId" th:field="*{userId}" class="form-control" type="text">
+                    <input id="userId" name="userId" th:field="*{userId}" class="form-control" type="text">
                 </div>
             </div>
             <div class="form-group">    
                 <label class="col-sm-3 control-label">员工姓名：</label>
                 <div class="col-sm-8">
-                    <input name="userName" th:field="*{userName}" class="form-control" type="text">
+                    <!--<input name="userName" th:field="*{userName}" class="form-control" type="text">-->
+                    <select id="userName" name="userName" th:field="*{userName}"  class="form-control" onchange="getUserId()">
+                        <option value="">选择 </option>
+                        <option th:each="employers : ${employers}" th:text="${employers.employerName}" th:code="${employers.employerId}" th:value="${employers.employerName}">
+                        </option>
+                    </select>
                 </div>
             </div>
         </form>
     </div>
     <th:block th:include="include :: footer" />
+
+    <th:block th:include="include :: select2-js" />
     <script type="text/javascript">
         var prefix = ctx + "detailedList/user";
         $("#form-user-edit").validate({
@@ -44,6 +52,10 @@
             if ($.validate.form()) {
                 $.operate.save(prefix + "/edit", $('#form-user-edit').serialize());
             }
+        }
+        function getUserId(){
+            var grade = $('#userName').find("option:selected").attr("code");
+            document.getElementById("userId").value=grade;
         }
     </script>
 </body>

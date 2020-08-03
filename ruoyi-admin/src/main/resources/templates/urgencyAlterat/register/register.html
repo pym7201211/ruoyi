@@ -2,6 +2,7 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('紧急变更登记列表')" />
+    <th:block th:include="include :: select2-css" />
 </head>
 <body class="gray-bg">
      <div class="container-div">
@@ -42,8 +43,17 @@
                                 <input type="text" class="time-input" id="endUrgencyDateTime" placeholder="结束时间" name="params[endUrgencyDate]"/>
                             </li>
                             <li>
-                                <p>所属团队</p>
+                                <p>所属团队：</p>
                                 <input type="text" id="scienceChargeTeam" name="params[scienceChargeTeam]"/>
+                            </li>
+                            <li>
+                                <p>类型：</p>
+                                <!--<input type="text" id="scienceChargeTeam" name="params[scienceChargeTeam]"/>-->
+                                <select name="identity" class="form-control" >
+                                    <option value="">所有</option>
+                                    <option value="UC">集中变更</option>
+                                    <option value="NCC">非集中变更</option>
+                                </select>
                             </li>
                             <!--<li>
                                 <p>实施人：</p>
@@ -232,6 +242,8 @@
         </div>
     </div>
     <th:block th:include="include :: footer" />
+     <th:block th:include="include :: select2-js" />
+
     <script th:inline="javascript">
         var editFlag = [[${@permission.hasPermi('urgencyAlterat:register:edit')}]];
         var removeFlag = [[${@permission.hasPermi('urgencyAlterat:register:remove')}]];
@@ -258,8 +270,8 @@
                     title : '系统名称'
                 },
                     {
-                        field : 'ip',
-                        title : 'ip'
+                        field : 'identity',
+                        title : '编号'
                     },
                 {
                     field : 'operatorId', 

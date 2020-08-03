@@ -50,6 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="bigDataTeamId"    column="big_data_team_id"    />
         <result property="reviewerStatus"    column="reviewer_status"    />
         <result property="scienceChargeTeam"    column="science_charge_team"    />
+        <result property="identity"    column="identity"    />
     </resultMap>
 
     <sql id="selectUrgencyAlteratRegisterVo">
@@ -57,7 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectUrgencyAlteratRegisterList" parameterType="UrgencyAlteratRegister" resultMap="UrgencyAlteratRegisterResult">
-        select distinct a.id,a.ip, a.system_name, operator_id, operator, reviewer_id, reviewer, order_num,
+        select distinct a.id,a.ip, a.system_name, operator_id, operator, reviewer_id, reviewer, order_num,a.identity,
         urgency_date, executor, start_time, end_time, urgency_fun_describe, cooperate_items,
         code_audit, finish_the_test, pressure_test, business_operation, handbook_update,
         risk_describe, send_back_scheme, urgency_sponsor_dept, internet_urgency, security_team,
@@ -67,13 +68,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         charge_leader_status, team_charge_id, security_team_id, big_data_team_id, reviewer_status,science_charge_team
         from urgency_alterat_register a
         left join token_xkstaff_department x
-        on a.operator_id = '0'||x.user_id
+        on a.operator_id = x.user_id
         left join token_system_inventory s
         on x.two_dept_org = s.department_id
         <where>  
             <if test="systemName != null  and systemName != ''"> and a.system_name like concat(concat('%', #{systemName}), '%')</if>
             <if test="operatorId != null  and operatorId != ''"> and operator_id = #{operatorId}</if>
-            <if test="operator != null  and operator != ''"> and operator = #{operator}</if>
+            <if test="operator != null  and operator != ''"> and operator like concat(concat('%', #{operator}), '%')</if>
             <if test="reviewerId != null  and reviewerId != ''"> and reviewer_id = #{reviewerId}</if>
             <if test="reviewer != null  and reviewer != ''"> and reviewer = #{reviewer}</if>
             <if test="orderNum != null  and orderNum != ''"> and order_num = #{orderNum}</if>
@@ -127,6 +128,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="params.scienceChargeTeam != null and params.scienceChargeTeam != ''">
                 and science_charge_team like concat(concat('%', #{params.scienceChargeTeam}), '%')
             </if>
+            <if test="identity != null  and identity != ''"> and a.identity like concat(concat('%', #{identity}), '%')</if>
         </where>
     </select>
     

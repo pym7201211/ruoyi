@@ -28,7 +28,7 @@ public class FortDetailedListServiceImpl implements FortDetailedListService {
 
 
     @Override
-    public boolean selectButton(String json) throws Exception{
+    public String selectButton(String json) throws Exception{
         try{
             if (null == json || "".equals(json)){
                 throw new IllegalArgumentException("selectButton json is null");
@@ -39,12 +39,25 @@ public class FortDetailedListServiceImpl implements FortDetailedListService {
                 JSONObject note = (JSONObject) jsonObject.get("note1");
                 String systemName = note.getString("systemName");
                 String userId = note.getString("userId");
-                return fortDetailedListMapper.selectButton(systemName,userId) > 0;
+                Map<String, Object> userDepMap = fortDetailedListMapper.selectUserDep(userId);
+                Map<String, Object> systemDepMap = fortDetailedListMapper.selectSystemDep(systemName);
+                String userDep = userDepMap.get("TWO_DEPT_ORG").toString();
+                String systemDep = systemDepMap.get("DEPARTMENT_ID").toString();
+                //先判断用户在不在维护系统人里，存在跨平台维护
+                int i = fortDetailedListMapper.selectButton(systemName, userId);
+                if(i>0){
+                    return "1";
+                }
+                //如果用户所属二级部门和系统所属部门不一致直接返回true，前端不显示认领按钮
+                if(!userDep.equals(systemDep)){
+                    return "3";
+                }
+                return "0";
             }
         }catch (Exception e){
             throw new Exception("查询按钮接口异常:",e);
         }
-        return false;
+        return "0";
     }
 
     /**

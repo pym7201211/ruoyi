@@ -67,4 +67,7 @@ public interface ITokenApplyFormService
      * @return 结果
      */
     public int deleteTokenApplyFormById(Long tokenId);
+
+
+
 }

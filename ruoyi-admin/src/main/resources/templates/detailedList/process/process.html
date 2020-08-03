@@ -2,6 +2,7 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('审批流程列表')" />
+    <th:block th:include="include :: select2-css" />
 </head>
 <body class="gray-bg">
      <div class="container-div">
@@ -30,13 +31,13 @@
                                 <p>审批内容：</p>
                                 <input type="text" name="applyContent"/>
                             </li>-->
-                            <li>
+                           <!-- <li>
                                 <p>流水号：</p>
                                 <input type="text" name="seno"/>
-                            </li>
+                            </li>-->
                             <li>
                                 <p>审批状态:</p>
-                                <select name="approvalStatus" th:with="type=${@dict.getType('token_approval_status')}">
+                                <select name="approvalStatus" class="form-control" th:with="type=${@dict.getType('token_approval_status')}">
                                     <option value="">所有</option>
                                     <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
                                 </select>
@@ -66,7 +67,7 @@
                             </li>
                             <li>
                                 <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
-                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset(),doReset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
                             </li>
                         </ul>
                     </div>
@@ -93,6 +94,7 @@
         </div>
     </div>
     <th:block th:include="include :: footer" />
+     <th:block th:include="include :: select2-js" />
     <script th:inline="javascript">
         var editFlag = [[${@permission.hasPermi('detailedList:process:edit')}]];
         var removeFlag = [[${@permission.hasPermi('detailedList:process:remove')}]];
@@ -183,6 +185,10 @@
             };
             $.table.init(options);
         });
+
+        function doReset() {
+            $(".form-control").val("").trigger("change");//重置下拉框
+        }
     </script>
 </body>
 </html>

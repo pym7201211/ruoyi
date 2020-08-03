@@ -34,8 +34,9 @@ public class FortDetailedListController extends BaseController {
         String code = "1";
         String msg = "查询失败";
         try{
-            boolean bl = fortDetailedListService.selectButton(json);
-            model.put("buttonStatus",bl == false ? "0" : "1");      //0-显示认领按钮
+            String result = fortDetailedListService.selectButton(json);
+            //0-显示认领按钮  1-说明系统维护人  3-登录用户二级部门和系统维护部门不是一个，且没有跨平台维护人员，什么按钮都不显示
+            model.put("buttonStatus",result);
             Map<String, String> map = fortDetailedListService.selectApporvalStaus(json);
             if (null != map && map.size() > 0){
                 model.put("approvalStatus",map.get("APPROVAL_STATUS")); //审批状态 0-不同意 1-同意 2-审批中 3-未审批

@@ -2,6 +2,7 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('江苏银行信息系统标准化清单（2019年四季度）列表')" />
+    <th:block th:include="include :: select2-css" />
     <style>
         .select-list li input{
             width: 130px;
@@ -24,12 +25,16 @@
                              <input type="text" name="type"/>
                          </li>-->
                         <li>
-                            <p>维护人员Id：</p>
-                            <input type="text" name="maintainUserId" class="maintainUserId"/>
+                            <p style="width: 100px">维护人员：</p>
+                            <input style="width: 200px" type="text" name="useMaintainStaff"/>
                         </li>
                         <li>
-                            <p>系统名称：</p>
-                            <input type="text" name="systemName"/>
+                            <p style="width: 100px">维护人员Id：</p>
+                            <input style="width: 200px" type="text" name="maintainUserId" class="maintainUserId"/>
+                        </li>
+                        <li>
+                            <p style="width: 100px">系统名称：</p>
+                            <input style="width: 200px" type="text" name="systemName"/>
                         </li>
                         <!--<li>
                             <p>系统简称：</p>
@@ -40,21 +45,22 @@
                             <input type="text" name="businessChargeDepartment"/>
                         </li>-->
                         <li>
-                            <p>类别：</p>
-                            <select name="params[baseType]" th:with="type=${@dict.getType('inventory_baseType')}">
+                            <p style="width: 100px">类别：</p>
+                            <select  name="params[baseType]" class="form-control"  th:with="type=${@dict.getType('inventory_baseType')}" >
                                 <option value="">所有</option>
                                 <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
                             </select>
                         </li>
-                        <li>
-                            <p>科技主管团队：</p>
-                            <input type="text" name="scienceChargeTeam"/>
+                        <li  >
+                            <p style="width: 100px">科技主管团队：</p>
+                            <!--<input type="text" name="scienceChargeTeam"/>-->
+                            <select  name="scienceChargeTeam" class="form-control"  >
+                                <option value="">所有</option>
+                                <option th:each="subTeam : ${subTeam}" th:text="${subTeam.DeptName}" th:value="${subTeam.DeptName}"></option>
+                            </select>
                         </li>
 
-                        <li>
-                            <p>应用维护：</p>
-                            <input type="text" name="useMaintainStaff"/>
-                        </li>
+
 
                         <!--<li>
                             <p>服务时间：</p>
@@ -68,7 +74,7 @@
                         </li>-->
                         <li>
                             <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
-                            <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset(),doReset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
                         </li>
                     </ul>
                 </div>
@@ -98,6 +104,7 @@
     </div>
 </div>
 <th:block th:include="include :: footer" />
+<th:block th:include="include :: select2-js" />
 <script th:inline="javascript">
     var editFlag = [[${@permission.hasPermi('forts:inventory:edit')}]];
     var removeFlag = [[${@permission.hasPermi('forts:inventory:remove')}]];
@@ -125,10 +132,10 @@
                     field : 'gradeClassify',
                     title : '等级分类'
                 },
-                {
+                /*{
                     field : 'ip',
                     title : 'ip'
-                },
+                },*/
                 {
                     field : 'type',
                     title : '类型'
@@ -139,7 +146,10 @@
                 },
                 {
                     field : 'systemName',
-                    title : '系统名称'
+                    title : '系统名称',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:80px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'systemAbbreviation',
@@ -155,7 +165,10 @@
                 },
                 {
                     field : 'useMaintainStaff',
-                    title : '应用维护'
+                    title : '维护人员',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:80px;">'+value+'</div>';
+                    }
                 },
                 {
                     field : 'maintainUserId',
@@ -175,7 +188,10 @@
                 },
                 {
                     field : 'productionDate',
-                    title : '投产日期'
+                    title : '投产日期',
+                    formatter: function (value, row, index) {
+                        return '<div style="width:130px;">'+value+'</div>';
+                    }
                 },
                 {
                     title: '操作',
@@ -190,6 +206,11 @@
         };
         $.table.init(options);
     });
+    function doReset() {
+        $(".form-control").val("").trigger("change");//重置下拉框
+    }
+
+
 </script>
 </body>
 <!-- 导入区域 -->

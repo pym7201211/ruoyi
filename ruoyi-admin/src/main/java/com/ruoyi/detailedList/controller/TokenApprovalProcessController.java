@@ -1,6 +1,8 @@
 package com.ruoyi.detailedList.controller;
 
 import java.util.List;
+
+import com.ruoyi.web.service.GeneralService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -33,6 +35,9 @@ public class TokenApprovalProcessController extends BaseController
 
     @Autowired
     private ITokenApprovalProcessService tokenApprovalProcessService;
+
+    @Autowired
+    private GeneralService generalService;
 
     @RequiresPermissions("detailedList:process:view")
     @GetMapping()
@@ -71,8 +76,9 @@ public class TokenApprovalProcessController extends BaseController
      * 新增审批流程
      */
     @GetMapping("/add")
-    public String add()
+    public String add(ModelMap mmap)
     {
+        mmap.put("employers", generalService.selectEmployeesAll());
         return prefix + "/add";
     }
 
@@ -85,6 +91,7 @@ public class TokenApprovalProcessController extends BaseController
     @ResponseBody
     public AjaxResult addSave(TokenApprovalProcess tokenApprovalProcess)
     {
+        tokenApprovalProcess.setTransferName(tokenApprovalProcess.getTransferName().replaceAll(",","、"));
         return toAjax(tokenApprovalProcessService.insertTokenApprovalProcess(tokenApprovalProcess));
     }
 
@@ -95,7 +102,9 @@ public class TokenApprovalProcessController extends BaseController
     public String edit(@PathVariable("id") Long id, ModelMap mmap)
     {
         TokenApprovalProcess tokenApprovalProcess = tokenApprovalProcessService.selectTokenApprovalProcessById(id);
-        mmap.put("tokenApprovalProcess", tokenApprovalProcess);
+        tokenApprovalProcess.setTransferName(tokenApprovalProcess.getTransferName().replaceAll("、",","));
+       mmap.put("tokenApprovalProcess", tokenApprovalProcess);
+        mmap.put("employers", generalService.selectEmployeesAll());
         return prefix + "/edit";
     }
 
@@ -108,6 +117,7 @@ public class TokenApprovalProcessController extends BaseController
     @ResponseBody
     public AjaxResult editSave(TokenApprovalProcess tokenApprovalProcess)
     {
+        tokenApprovalProcess.setTransferName(tokenApprovalProcess.getTransferName().replaceAll(",","、"));
         return toAjax(tokenApprovalProcessService.updateTokenApprovalProcess(tokenApprovalProcess));
     }
 

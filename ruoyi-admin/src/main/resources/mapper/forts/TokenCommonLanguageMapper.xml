@@ -20,9 +20,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTokenCommonLanguageList" parameterType="TokenCommonLanguage" resultMap="TokenCommonLanguageResult">
         <include refid="selectTokenCommonLanguageVo"/>
         <where>  
-            <if test="content != null  and content != ''"> and content = #{content}</if>
+            <if test="content != null  and content != ''"> and content like concat(concat('%', #{content}), '%')</if>
             <if test="incidentType != null  and incidentType != ''"> and incident_type = #{incidentType}</if>
-            <if test="signId != null  and signId != ''"> and sign_id = #{signId}</if>
+            <if test="signId != null  and signId != ''"> and sign_id like concat(concat('%', #{signId}), '%')</if>
         </where>
     </select>
     

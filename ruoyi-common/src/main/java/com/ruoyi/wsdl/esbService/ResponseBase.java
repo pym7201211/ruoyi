@@ -9,9 +9,9 @@ import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>ResponseBase complex type�� Java �ࡣ
+ * <p>ResponseBase complex type?? Java ??
  * 
- * <p>����ģʽƬ��ָ�������ڴ����е�Ԥ�����ݡ�
+ * <p>??????????????????????е?????????
  * 
  * <pre>
  * &lt;complexType name="ResponseBase">
@@ -76,7 +76,7 @@ public class ResponseBase {
     protected String retmsg;
 
     /**
-     * ��ȡseqno���Ե�ֵ��
+     * ???seqno????????
      * 
      * @return
      *     possible object is
@@ -88,7 +88,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����seqno���Ե�ֵ��
+     * ????seqno????????
      * 
      * @param value
      *     allowed object is
@@ -100,7 +100,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡserviceid���Ե�ֵ��
+     * ???serviceid????????
      * 
      * @return
      *     possible object is
@@ -112,7 +112,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����serviceid���Ե�ֵ��
+     * ????serviceid????????
      * 
      * @param value
      *     allowed object is
@@ -124,7 +124,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡbankcode���Ե�ֵ��
+     * ???bankcode????????
      * 
      * @return
      *     possible object is
@@ -136,7 +136,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����bankcode���Ե�ֵ��
+     * ????bankcode????????
      * 
      * @param value
      *     allowed object is
@@ -148,7 +148,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡtrandate���Ե�ֵ��
+     * ???trandate????????
      * 
      * @return
      *     possible object is
@@ -160,7 +160,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����trandate���Ե�ֵ��
+     * ????trandate????????
      * 
      * @param value
      *     allowed object is
@@ -172,7 +172,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡtrantime���Ե�ֵ��
+     * ???trantime????????
      * 
      * @return
      *     possible object is
@@ -184,7 +184,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����trantime���Ե�ֵ��
+     * ????trantime????????
      * 
      * @param value
      *     allowed object is
@@ -196,7 +196,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡtranstatus���Ե�ֵ��
+     * ???transtatus????????
      * 
      * @return
      *     possible object is
@@ -208,7 +208,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����transtatus���Ե�ֵ��
+     * ????transtatus????????
      * 
      * @param value
      *     allowed object is
@@ -220,7 +220,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡerrorcode���Ե�ֵ��
+     * ???errorcode????????
      * 
      * @return
      *     possible object is
@@ -232,7 +232,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����errorcode���Ե�ֵ��
+     * ????errorcode????????
      * 
      * @param value
      *     allowed object is
@@ -244,7 +244,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡerrormsg���Ե�ֵ��
+     * ???errormsg????????
      * 
      * @return
      *     possible object is
@@ -256,7 +256,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����errormsg���Ե�ֵ��
+     * ????errormsg????????
      * 
      * @param value
      *     allowed object is
@@ -268,7 +268,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡretcode���Ե�ֵ��
+     * ???retcode????????
      * 
      * @return
      *     possible object is
@@ -280,7 +280,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����retcode���Ե�ֵ��
+     * ????retcode????????
      * 
      * @param value
      *     allowed object is
@@ -292,7 +292,7 @@ public class ResponseBase {
     }
 
     /**
-     * ��ȡretmsg���Ե�ֵ��
+     * ???retmsg????????
      * 
      * @return
      *     possible object is
@@ -304,7 +304,7 @@ public class ResponseBase {
     }
 
     /**
-     * ����retmsg���Ե�ֵ��
+     * ????retmsg????????
      * 
      * @param value
      *     allowed object is

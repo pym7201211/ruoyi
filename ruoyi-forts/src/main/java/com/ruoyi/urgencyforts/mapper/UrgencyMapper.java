@@ -6,6 +6,7 @@ import org.apache.shiro.crypto.hash.Hash;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface UrgencyMapper {
 
@@ -96,7 +97,15 @@ public interface UrgencyMapper {
      * @param operatorId
      * @return
      */
-    public List<HashMap<String,String>> selectUrgencyHistory(@Param("operatorId") String operatorId);
+    public List<HashMap<String,String>> selectUrgencyHistory(@Param("operatorId") String operatorId ,@Param("ip") String ip,@Param("category") String category);
+
+    /**
+     * 查询联合告警紧急变更历史
+     * @param systemName
+     * @return
+     */
+    public List<HashMap<String,String>> selectUrgencyIPHistory(@Param("systemName") String systemName);
+
 
     /**
      * 查询变更进度
@@ -126,7 +135,7 @@ public interface UrgencyMapper {
 
     public String selectBigDataTeam(@Param("orderNo") String orderNo);
 
-    public String selectOperator(@Param("orderNo") String orderNo);
+    public Map<String,Object> selectOperator(@Param("orderNo") String orderNo);
 
     public String selectRunTeam();
 
@@ -134,8 +143,25 @@ public interface UrgencyMapper {
 
     public List<String> selectAffiliatedTeam(@Param("userId") String userId);
 
+    public List<HashMap<String, String>> selectAffiliatedIPTeam(@Param("systemName") String systemName);
+
+
     public int updateManageStatus(@Param("manageStatus") String manageStatus,
                                   @Param("orderNo") String orderNo);
 
     public List<HashMap<String,String>> noApprovalData();
+
+    /**
+     * 查询下一个编号
+     *
+     * @return 结果
+     */
+    public Map<String,Object> selectNextId(String identity);
+
+    /**
+     * 查询下一个编号
+     *
+     * @return 结果
+     */
+    public Map<String,Object> selectNextNccId(String identity);
 }
