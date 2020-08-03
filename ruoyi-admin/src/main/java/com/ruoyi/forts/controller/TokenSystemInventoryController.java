@@ -140,7 +140,6 @@ public class TokenSystemInventoryController extends BaseController
     public String edit(@PathVariable("id") Long id, ModelMap mmap)
     {
 
-
         TokenSystemInventory tokenSystemInventory = tokenSystemInventoryService.selectTokenSystemInventoryById(id);
         tokenSystemInventory.setUseMaintainStaff(tokenSystemInventory.getUseMaintainStaff().replaceAll("、",","));
         mmap.put("tokenSystemInventory", tokenSystemInventory);
